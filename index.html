@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minecraft Skin Generator</title>
+<style>
+  :root {
+    --bg: #17181d;
+    --panel: #1f2128;
+    --border: #2e313c;
+    --text: #e6e7eb;
+    --sub: #9aa0ac;
+    --accent: #4f8cff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", sans-serif;
+    font-size: 14px;
+  }
+  header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header p { margin: 0; color: var(--sub); font-size: 12px; }
+  main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 16px 20px;
+    align-items: flex-start;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .controls { width: 340px; display: flex; flex-direction: column; gap: 14px; }
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    color: var(--sub);
+    cursor: pointer;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color .15s;
+  }
+  .dropzone.drag { border-color: var(--accent); }
+  .dropzone img { max-width: 100%; max-height: 160px; object-fit: contain; }
+  .dropzone span { pointer-events: none; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row label { color: var(--sub); }
+  select, input[type="color"] {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+  }
+  input[type="checkbox"] { accent-color: var(--accent); }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field > span { color: var(--sub); font-size: 12px; }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:disabled { background: var(--border); color: var(--sub); cursor: default; }
+  .previews { display: flex; gap: 16px; flex-wrap: wrap; }
+  .preview-box { display: flex; flex-direction: column; gap: 8px; }
+  .preview-box h2 { font-size: 13px; margin: 0; color: var(--sub); font-weight: 600; }
+  canvas.pixelated {
+    image-rendering: pixelated;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .checker {
+    background:
+      conic-gradient(#26282f 0 25%, #1d1f25 0 50%, #26282f 0 75%, #1d1f25 0) 0 0 / 16px 16px;
+  }
+  .hint { color: var(--sub); font-size: 12px; line-height: 1.6; }
+  code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Minecraft Skin Generator</h1>
+  <p>Generate 64x64 / 128x128 skins from images</p>
+</header>
+<main>
+  <section class="panel controls">
+    <div class="field">
+      <span>Front image (required)</span>
+      <div class="dropzone" id="dropFront"><span>Click or drag &amp; drop</span></div>
+      <input type="file" id="fileFront" accept="image/*" hidden>
+    </div>
+    <div class="field">
+      <span>Back image (optional; a darkened front is used by default)</span>
+      <div class="dropzone" id="dropBack"><span>Click or drag &amp; drop</span></div>
+      <input type="file" id="fileBack" accept="image/*" hidden>
+    </div>
+    <div class="row">
+      <label>Size</label>
+      <select id="size">
+        <option value="64">64 x 64 (Java)</option>
+        <option value="128" selected>128 x 128</option>
+        <option value="256">256 x 256</option>
+      </select>
+      <label>Fit</label>
+      <select id="fit">
+        <option value="contain" selected>contain (with margins)</option>
+        <option value="cover">cover (crop overflow)</option>
+        <option value="stretch">stretch</option>
+      </select>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="slim"> Slim arms (Alex)</label>
+      <label><input type="checkbox" id="face"> Face photo mode</label>
+      <label><input type="checkbox" id="pixel"> Pixel art</label>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="bgTransparent" checked> Transparent margins</label>
+      <input type="color" id="bg" value="#ffffff">
+    </div>
+    <button id="download" disabled>Download skin (PNG)</button>
+    <p class="hint">
+      The skin regenerates automatically whenever you change a setting.<br>
+      Upload the downloaded PNG in your Minecraft profile settings to apply it.
+    </p>
+  </section>
+  <section class="previews">
+    <div class="panel preview-box">
+      <h2>Skin texture</h2>
+      <canvas id="texPreview" class="pixelated checker" width="384" height="384"></canvas>
+    </div>
+    <div class="panel preview-box">
+      <h2>Front preview</h2>
+      <canvas id="charPreview" class="pixelated" width="192" height="384"></canvas>
+    </div>
+  </section>
+</main>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const CHAR_W = 16, CHAR_H = 32;
+
+function mkCanvas(w, h) {
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  return c;
+}
+function resize(src, w, h, smooth = true) {
+  const c = mkCanvas(w, h);
+  const x = c.getContext("2d");
+  x.imageSmoothingEnabled = smooth;
+  x.drawImage(src, 0, 0, w, h);
+  return c;
+}
+function crop(src, x0, y0, x1, y1) {
+  const w = x1 - x0, h = y1 - y0;
+  const c = mkCanvas(w, h);
+  c.getContext("2d").drawImage(src, x0, y0, w, h, 0, 0, w, h);
+  return c;
+}
+function shade(src, factor) {
+  const c = mkCanvas(src.width, src.height);
+  const x = c.getContext("2d");
+  x.drawImage(src, 0, 0);
+  const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+  for (let i = 0; i < p.length; i += 4) {
+    p[i]     = Math.min(255, p[i]     * factor | 0);
+    p[i + 1] = Math.min(255, p[i + 1] * factor | 0);
+    p[i + 2] = Math.min(255, p[i + 2] * factor | 0);
+  }
+  x.putImageData(d, 0, 0);
+  return c;
+}
+function blurCanvas(src, r) {
+  const c = mkCanvas(src.width, src.height);
+  const x = c.getContext("2d");
+  x.filter = `blur(${r}px)`;
+  x.drawImage(src, 0, 0);
+  x.filter = "none";
+  return c;
+}
+function fitToCanvas(src, w, h, mode, bg, pixel) {
+  const smooth = !pixel;
+  if (mode === "stretch") return resize(src, w, h, smooth);
+  const sx = w / src.width, sy = h / src.height;
+  const scale = mode === "cover" ? Math.max(sx, sy) : Math.min(sx, sy);
+  const nw = Math.max(1, Math.round(src.width * scale));
+  const nh = Math.max(1, Math.round(src.height * scale));
+  const resized = resize(src, nw, nh, smooth);
+  const c = mkCanvas(w, h);
+  const x = c.getContext("2d");
+  if (bg.a > 0) {
+    x.fillStyle = `rgba(${bg.r},${bg.g},${bg.b},${bg.a / 255})`;
+    x.fillRect(0, 0, w, h);
+  }
+  if (mode === "contain") {
+    x.drawImage(resized, (w - nw) >> 1, (h - nh) >> 1);
+  } else { // cover: crop the center
+    const left = (nw - w) >> 1, top = (nh - h) >> 1;
+    x.drawImage(resized, left, top, w, h, 0, 0, w, h);
+  }
+  return c;
+}
+function pasteBox(skin, origin, w, h, d, front, back, s, edge = null) {
+  // Paste the unwrapped faces of a box (w x h x d) onto the skin.
+  // If edge is given, side/top/bottom faces are built from its border pixels.
+  const [u, v] = origin, W = w * s, H = h * s, D = d * s;
+  const f = edge ?? front;
+  const faces = [
+    [shade(resize(crop(f, 0, 0, W, 1), W, D), 1.1),   u + d,     v],     // top
+    [shade(resize(crop(f, 0, H - 1, W, 1), W, D), 0.6), u + d + w, v],   // bottom
+    [shade(resize(crop(f, 0, 0, 1, H), D, H), 0.85),  u,         v + d], // right
+    [front,                                          u + d,     v + d], // front
+    [shade(resize(crop(f, W - 1, 0, 1, H), D, H), 0.85), u + d + w, v + d], // left
+    [back,                                           u + 2 * d + w, v + d], // back
+  ];
+  const x = skin.getContext("2d");
+  for (const [img, fx, fy] of faces) x.drawImage(img, fx * s, fy * s);
+}
+function makeParts(canvas, s, arm) {
+  const a = 4 - arm; // shrink the arm region by 1px for the slim model
+  const C = (x0, y0, x1, y1) => crop(canvas, x0 * s, y0 * s, x1 * s, y1 * s);
+  return {
+    head:  C(4, 0, 12, 8),
+    body:  C(4, 8, 12, 20),
+    r_arm: C(0 + a, 8, 4, 20),
+    l_arm: C(12, 8, 16 - a, 20),
+    r_leg: C(4, 20, 8, 32),
+    l_leg: C(8, 20, 12, 32),
+  };
+}
+const LAYOUT = [
+  ["head",  [0, 0],   8, 8, 8],
+  ["body",  [16, 16], 8, 12, 4],
+  ["r_leg", [0, 16],  4, 12, 4],
+  ["r_arm", [40, 16], null, 12, 4],
+  ["l_leg", [16, 48], 4, 12, 4],
+  ["l_arm", [32, 48], null, 12, 4],
+];
+function buildSkinCore(frontSrc, backSrc, size, slim, fit, bg, pixel) {
+  const s = size / 64, arm = slim ? 3 : 4;
+  const f = makeParts(fitToCanvas(frontSrc, CHAR_W * s, CHAR_H * s, fit, bg, pixel), s, arm);
+  const b = backSrc
+    ? makeParts(fitToCanvas(backSrc, CHAR_W * s, CHAR_H * s, fit, bg, pixel), s, arm)
+    : Object.fromEntries(Object.entries(f).map(([k, v]) => [k, shade(v, 0.85)]));
+  const skin = mkCanvas(size, size);
+  for (const [name, origin, w, h, d] of LAYOUT) {
+    const pw = w ?? arm;
+    pasteBox(skin, origin, pw, h, d, f[name], b[name], s);
+  }
+  return skin;
+}
+function buildFaceSkin(src, size, slim, pixel) {
+  // Face photo mode: put the face on the front of the head and paint the body with blurred fur color
+  const s = size / 64;
+  const blurred = blurCanvas(src, Math.max(1, Math.max(src.width, src.height) / 12 | 0));
+  const skin = buildSkinCore(blurred, null, size, slim, "stretch", { r: 0, g: 0, b: 0, a: 0 }, false);
+  const face = fitToCanvas(src, 8 * s, 8 * s, "cover", { r: 0, g: 0, b: 0, a: 0 }, pixel);
+  const headBlur = fitToCanvas(blurred, 8 * s, 8 * s, "cover", { r: 0, g: 0, b: 0, a: 0 }, false);
+  pasteBox(skin, [0, 0], 8, 8, 8, face, shade(headBlur, 0.85), s, headBlur);
+  return skin;
+}
+
+let frontImg = null, backImg = null, currentSkin = null, baseName = "skin";
+
+function loadFile(file, cb) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => { cb(img); URL.revokeObjectURL(url); };
+  img.src = url;
+}
+function setupDrop(dropId, inputId, cb) {
+  const zone = $(dropId), input = $(inputId);
+  zone.addEventListener("click", () => input.click());
+  input.addEventListener("change", () => { if (input.files[0]) cb(input.files[0]); });
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("drag"));
+  zone.addEventListener("drop", e => {
+    e.preventDefault();
+    zone.classList.remove("drag");
+    if (e.dataTransfer.files[0]) cb(e.dataTransfer.files[0]);
+  });
+}
+setupDrop("dropFront", "fileFront", file => {
+  baseName = file.name.replace(/\.[^.]+$/, "") || "skin";
+  loadFile(file, img => {
+    frontImg = img;
+    const zone = $("dropFront");
+    zone.innerHTML = "";
+    zone.appendChild(cloneForDisplay(img));
+    generate();
+  });
+});
+setupDrop("dropBack", "fileBack", file => {
+  loadFile(file, img => {
+    backImg = img;
+    const zone = $("dropBack");
+    zone.innerHTML = "";
+    zone.appendChild(cloneForDisplay(img));
+    generate();
+  });
+});
+function cloneForDisplay(img) {
+  const c = mkCanvas(img.naturalWidth, img.naturalHeight);
+  c.getContext("2d").drawImage(img, 0, 0);
+  c.style.maxWidth = "100%";
+  c.style.maxHeight = "160px";
+  c.style.objectFit = "contain";
+  return c;
+}
+function hexToRgb(hex) {
+  const v = hex.replace("#", "");
+  return {
+    r: parseInt(v.slice(0, 2), 16),
+    g: parseInt(v.slice(2, 4), 16),
+    b: parseInt(v.slice(4, 6), 16),
+    a: 255,
+  };
+}
+function generate() {
+  if (!frontImg) return;
+  const size = +$("size").value;
+  const slim = $("slim").checked, pixel = $("pixel").checked, faceMode = $("face").checked;
+  const bg = $("bgTransparent").checked ? { r: 0, g: 0, b: 0, a: 0 } : hexToRgb($("bg").value);
+  currentSkin = faceMode
+    ? buildFaceSkin(frontImg, size, slim, pixel)
+    : buildSkinCore(frontImg, backImg, size, slim, $("fit").value, bg, pixel);
+  $("download").disabled = false;
+  drawTexture(currentSkin, size);
+  drawCharPreview(currentSkin, size, slim ? 3 : 4);
+}
+function drawTexture(skin, size) {
+  const tp = $("texPreview");
+  const zoom = Math.max(1, Math.floor(384 / size));
+  tp.width = size * zoom;
+  tp.height = size * zoom;
+  const x = tp.getContext("2d");
+  x.clearRect(0, 0, tp.width, tp.height);
+  x.drawImage(skin, 0, 0, tp.width, tp.height);
+}
+function drawCharPreview(skin, size, arm) {
+  const cp = $("charPreview");
+  const s = size / 64, zoom = Math.max(2, Math.floor(384 / CHAR_H));
+  cp.width = CHAR_W * zoom;
+  cp.height = CHAR_H * zoom;
+  const x = cp.getContext("2d");
+  x.clearRect(0, 0, cp.width, cp.height);
+  // Arrange the front face (u+d, v+d) of each part into a full-body layout
+  const parts = [
+    ["head", 4, 0], ["body", 4, 8],
+    ["r_arm", 0, 8], ["l_arm", CHAR_W - arm, 8],
+    ["r_leg", 4, 20], ["l_leg", 8, 20],
+  ];
+  for (const [name, origin] of LAYOUT.map(l => [l[0], l[1]])) {
+    const [u, v] = origin;
+    const entry = LAYOUT.find(l => l[0] === name);
+    const w = entry[2] ?? arm, h = entry[3], d = entry[4];
+    const [, gx, gy] = parts.find(p => p[0] === name);
+    x.drawImage(skin, (u + d) * s, (v + d) * s, w * s, h * s,
+                gx * zoom, gy * zoom, w * zoom, h * zoom);
+  }
+}
+for (const id of ["size", "fit", "slim", "face", "pixel", "bgTransparent", "bg"]) {
+  $(id).addEventListener("change", () => {
+    const faceMode = $("face").checked;
+    $("fit").disabled = faceMode;
+    $("bgTransparent").disabled = faceMode;
+    $("bg").disabled = faceMode;
+    generate();
+  });
+}
+$("download").addEventListener("click", () => {
+  if (!currentSkin) return;
+  currentSkin.toBlob(blob => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = baseName + "_skin.png";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, "image/png");
+});
+</script>
+</body>
+</html>
