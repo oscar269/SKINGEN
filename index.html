@@ -14,6 +14,7 @@
     --accent: #4f8cff;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0;
     background: var(--bg);
@@ -106,15 +107,29 @@
 <main>
   <section class="panel controls">
     <div class="field">
-      <span>Front image (required)</span>
+      <span id="frontLabel">Front image (required)</span>
       <div class="dropzone" id="dropFront"><span>Click or drag &amp; drop</span></div>
       <input type="file" id="fileFront" accept="image/*" hidden>
     </div>
-    <div class="field">
+    <div class="field" id="fieldBody" hidden>
+      <span>Body image (optional; blurred face is used when empty)</span>
+      <div class="dropzone" id="dropBody"><span>Click or drag &amp; drop</span></div>
+      <input type="file" id="fileBody" accept="image/*" hidden>
+    </div>
+    <div class="field" id="fieldBack">
       <span>Back image (optional; a darkened front is used by default)</span>
       <div class="dropzone" id="dropBack"><span>Click or drag &amp; drop</span></div>
       <input type="file" id="fileBack" accept="image/*" hidden>
     </div>
+    <div class="row">
+      <label>Mode</label>
+      <select id="mode">
+        <option value="body" selected>Whole body photo</option>
+        <option value="face">Face only</option>
+        <option value="facebody">Face + body (separate images)</option>
+      </select>
+    </div>
+    <p class="hint" id="modeHint"></p>
     <div class="row">
       <label>Size</label>
       <select id="size">
@@ -131,7 +146,6 @@
     </div>
     <div class="row">
       <label><input type="checkbox" id="slim"> Slim arms (Alex)</label>
-      <label><input type="checkbox" id="face"> Face photo mode</label>
       <label><input type="checkbox" id="pixel"> Pixel art</label>
     </div>
     <div class="row">
@@ -197,6 +211,10 @@ function blurCanvas(src, r) {
   x.filter = `blur(${r}px)`;
   x.drawImage(src, 0, 0);
   x.filter = "none";
+  // A blur fades the border pixels to transparent, which would punch holes in the skin
+  const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+  for (let i = 3; i < p.length; i += 4) p[i] = 255;
+  x.putImageData(d, 0, 0);
   return c;
 }
 function fitToCanvas(src, w, h, mode, bg, pixel) {
@@ -281,7 +299,21 @@ function buildFaceSkin(src, size, slim, pixel) {
   return skin;
 }
 
-let frontImg = null, backImg = null, currentSkin = null, baseName = "skin";
+function buildFaceBodySkin(faceSrc, bodySrc, backSrc, size, slim, fit, bg, pixel) {
+  // Face + body mode: the face image goes on the head, the body image on everything else.
+  // Without a body image the body falls back to the blurred face (same as face-only mode).
+  const s = size / 64, T = { r: 0, g: 0, b: 0, a: 0 };
+  const faceBlur = blurCanvas(faceSrc, Math.max(1, Math.max(faceSrc.width, faceSrc.height) / 12 | 0));
+  const skin = bodySrc
+    ? buildSkinCore(bodySrc, backSrc, size, slim, fit, bg, pixel)
+    : buildSkinCore(faceBlur, null, size, slim, "stretch", T, false);
+  const face = fitToCanvas(faceSrc, 8 * s, 8 * s, "cover", T, pixel);
+  const headBlur = fitToCanvas(faceBlur, 8 * s, 8 * s, "cover", T, false);
+  pasteBox(skin, [0, 0], 8, 8, 8, face, shade(headBlur, 0.85), s, headBlur);
+  return skin;
+}
+
+let frontImg = null, bodyImg = null, backImg = null, currentSkin = null, baseName = "skin";
 
 function loadFile(file, cb) {
   const url = URL.createObjectURL(file);
@@ -308,6 +340,16 @@ setupDrop("dropFront", "fileFront", file => {
     const zone = $("dropFront");
     zone.innerHTML = "";
     zone.appendChild(cloneForDisplay(img));
+    generate();
+  });
+});
+setupDrop("dropBody", "fileBody", file => {
+  loadFile(file, img => {
+    bodyImg = img;
+    const zone = $("dropBody");
+    zone.innerHTML = "";
+    zone.appendChild(cloneForDisplay(img));
+    updateUi();
     generate();
   });
 });
@@ -340,14 +382,37 @@ function hexToRgb(hex) {
 function generate() {
   if (!frontImg) return;
   const size = +$("size").value;
-  const slim = $("slim").checked, pixel = $("pixel").checked, faceMode = $("face").checked;
+  const slim = $("slim").checked, pixel = $("pixel").checked;
   const bg = $("bgTransparent").checked ? { r: 0, g: 0, b: 0, a: 0 } : hexToRgb($("bg").value);
-  currentSkin = faceMode
-    ? buildFaceSkin(frontImg, size, slim, pixel)
-    : buildSkinCore(frontImg, backImg, size, slim, $("fit").value, bg, pixel);
+  const mode = $("mode").value;
+  if (mode === "face") {
+    currentSkin = buildFaceSkin(frontImg, size, slim, pixel);
+  } else if (mode === "facebody") {
+    currentSkin = buildFaceBodySkin(frontImg, bodyImg, backImg, size, slim, $("fit").value, bg, pixel);
+  } else {
+    currentSkin = buildSkinCore(frontImg, backImg, size, slim, $("fit").value, bg, pixel);
+  }
   $("download").disabled = false;
   drawTexture(currentSkin, size);
   drawCharPreview(currentSkin, size, slim ? 3 : 4);
+}
+function updateUi() {
+  const mode = $("mode").value, faceOnly = mode === "face", faceBody = mode === "facebody";
+  $("frontLabel").textContent = faceOnly || faceBody ? "Face image (required)" : "Front image (required)";
+  $("fieldBody").hidden = !faceBody;
+  $("fieldBack").hidden = faceOnly;
+  // Fit / background only matter when a body image (or a whole body photo) is being laid out
+  const usesBody = mode === "body" || (faceBody && bodyImg);
+  $("fit").disabled = !usesBody;
+  $("bgTransparent").disabled = !usesBody;
+  $("bg").disabled = !usesBody;
+  $("modeHint").textContent = faceOnly
+    ? "Face only: the face is printed on the head, the body uses a blurred copy of it."
+    : faceBody
+      ? (bodyImg
+        ? "Face + body: face image on the head, body image on torso, arms and legs."
+        : "Face + body: drop a body image to use it; until then the body uses a blurred copy of the face.")
+      : "Whole body photo: the front image is wrapped around the entire skin.";
 }
 function drawTexture(skin, size) {
   const tp = $("texPreview");
@@ -380,15 +445,13 @@ function drawCharPreview(skin, size, arm) {
                 gx * zoom, gy * zoom, w * zoom, h * zoom);
   }
 }
-for (const id of ["size", "fit", "slim", "face", "pixel", "bgTransparent", "bg"]) {
+for (const id of ["size", "fit", "slim", "mode", "pixel", "bgTransparent", "bg"]) {
   $(id).addEventListener("change", () => {
-    const faceMode = $("face").checked;
-    $("fit").disabled = faceMode;
-    $("bgTransparent").disabled = faceMode;
-    $("bg").disabled = faceMode;
+    updateUi();
     generate();
   });
 }
+updateUi();
 $("download").addEventListener("click", () => {
   if (!currentSkin) return;
   currentSkin.toBlob(blob => {
