@@ -3,8 +3,8 @@
 # SKINGEN — Minecraft Skin Generator
 
 Put a real photo on a Minecraft character. One HTML file, no install, no server, no network:
-open it, drop a picture, download a skin. Bedrock Edition takes 128×128 skins (256×256 as well),
-so a high-resolution photo keeps its detail in game.
+open it, drop a picture, download a skin. Bedrock Edition takes 128×128 skins,
+so a high-resolution photo keeps its detail in game (256×256 needs a skin mod).
 
 **[▶ https://oscar269.github.io/SKINGEN/](https://oscar269.github.io/SKINGEN/)** · [日本語](#日本語)
 
@@ -13,7 +13,7 @@ so a high-resolution photo keeps its detail in game.
 ## What it does
 
 - **Photo → skin.** A front photo is mapped onto the head, torso, arms and legs; the sides, top, bottom and back are derived from it.
-- **Works in Java and Bedrock.** Export 64×64 for Java Edition and 128×128 for Bedrock Edition (256×256 also works). Verified in-game on both, including on a Bedrock server.
+- **Works in Java and Bedrock.** Export 64×64 for Java Edition and 128×128 for Bedrock Edition. Verified in-game on both, including on a Bedrock server.
 - **3D preview you can spin.** Drag to rotate, wheel / pinch to zoom, double-click to reset. Auto rotate is on by default, and the overlay (second) layer is rendered too.
 - **Three modes.** Face + body (default), face only, or one whole-body photo.
 - **Per-image Fit.** `contain` / `cover` / `stretch` is set separately for the front, body and back images.
@@ -46,7 +46,7 @@ so a high-resolution photo keeps its detail in game.
 | Body image + Fit | Shown in `Face + body`. Torso, arms and legs |
 | Back image + Fit | Optional; a darkened mirror of the front is used when empty |
 | Mode | One of the three modes above |
-| Size | 64×64 (Java) / 128×128 (Bedrock) / 256×256 (Bedrock, high-res) |
+| Size | 64×64 (Java) / 128×128 (Bedrock) / 256×256 (only with a skin mod) |
 | Slim arms (Alex) | Use this when you pick the Alex model in-game; leave it off for Steve |
 | Pixel art | Nearest-neighbour scaling instead of smooth, for pixel-art sources |
 | Transparent margins | Keep transparent source pixels transparent; turn it off to fill them with the colour picker value |
@@ -58,7 +58,7 @@ so a high-resolution photo keeps its detail in game.
 | --- | --- | --- |
 | 64×64 | Java Edition (1.8+) | The only size Java accepts |
 | 128×128 | Bedrock Edition | Recommended; the size Bedrock servers use |
-| 256×256 | Bedrock Edition | Sharper, larger file |
+| 256×256 | Modded Bedrock | The tool can export it, but vanilla Bedrock rejects anything over 128×128 — it needs a custom skin loader / mod |
 
 - Arm width is part of the skin format. If you export with `Slim arms (Alex)` but pick the classic model in-game (or the other way round), the arms sit one pixel off.
 - Bedrock takes the same PNG from a server as from single-player, so a 128×128 export looks the same everywhere.
@@ -66,7 +66,7 @@ so a high-resolution photo keeps its detail in game.
 ### Applying the skin
 
 - **Java Edition**: Launcher → Skins → New skin → choose the PNG (64×64).
-- **Bedrock Edition**: Launcher → Skins, or the in-game character creator → import the PNG (64 / 128 / 256).
+- **Bedrock Edition**: Launcher → Skins, or the in-game character creator → import the PNG (64 / 128; 256 needs a mod).
 
 ## 3D preview
 
@@ -148,7 +148,7 @@ No license has been specified for this repository yet.
 # 日本語
 
 写真をそのまま Minecraft のキャラクターに。`index.html` を開くだけで動き、インストールもサーバもネット接続も要りません。
-Bedrock は 128×128（256×256 も可）なので、**高画質な写真の細部をそのままスキンにできます**。
+Bedrock は 128×128 なので、**高画質な写真の細部をそのままスキンにできます**（256×256 は mod が必要）。
 
 **[▶ https://oscar269.github.io/SKINGEN/](https://oscar269.github.io/SKINGEN/)** · [English](#top)
 
@@ -157,7 +157,7 @@ Bedrock は 128×128（256×256 も可）なので、**高画質な写真の細�
 ## できること
 
 - **写真からスキンへ。** 正面の写真を頭・胴・腕・脚に貼り、側面・上下・背面はそこから作ります。
-- **Java でも Bedrock でも動く。** Java 用に 64×64、Bedrock 用に 128×128 を書き出せます（256×256 も可）。実機の Java、そして Bedrock のサーバー上でも 128×128 のスキンで動作確認済みです。
+- **Java でも Bedrock でも動く。** Java 用に 64×64、Bedrock 用に 128×128 を書き出せます。実機の Java、そして Bedrock のサーバー上でも 128×128 のスキンで動作確認済みです。
 - **ぐるぐる回せる3Dプレビュー。** ドラッグで回転、ホイール / ピンチで拡大、ダブルクリックで正面に戻ります。自動回転は既定でオン。重ね着レイヤーも描画します。
 - **モードは3つ。** 顔＋体（既定）、顔だけ、全身写真。
 - **画像ごとの Fit。** 前面・体・背面それぞれに `contain` / `cover` / `stretch` を指定できます。
@@ -190,7 +190,7 @@ Bedrock は 128×128（256×256 も可）なので、**高画質な写真の細�
 | Body image + Fit | `Face + body` のとき表示。胴・腕・脚 |
 | Back image + Fit | 任意。未指定なら正面を左右反転して暗くしたもの |
 | Mode | 上の3モード |
-| Size | 64×64（Java）/ 128×128（Bedrock）/ 256×256（Bedrock・高解像度） |
+| Size | 64×64（Java）/ 128×128（Bedrock）/ 256×256（mod 必須） |
 | Slim arms (Alex) | ゲーム側で Alex を選ぶときはオン、Steve ならオフ |
 | Pixel art | 縮小時に補間せず最近傍で縮小（ドット絵向け） |
 | Transparent margins | 元画像の透過部分を透明のまま残す。オフにするとカラーピッカーの色で塗る |
@@ -202,7 +202,7 @@ Bedrock は 128×128（256×256 も可）なので、**高画質な写真の細�
 | --- | --- | --- |
 | 64×64 | Java Edition（1.8 以降） | Java が受け付ける唯一のサイズ |
 | 128×128 | Bedrock Edition | 推奨。Bedrock のサーバーでもこのサイズ |
-| 256×256 | Bedrock Edition | さらに精細。ファイルサイズは増える |
+| 256×256 | Bedrock（mod 必須） | 書き出しはできますが、バニラの Bedrock は 128×128 より大きいスキンを読み込みません。カスタムスキン用の mod / ローダーが必要です |
 
 - 腕の太さはスキン形式の一部です。`Slim arms (Alex)` で出力したのにゲーム側でクラシック（Steve）を選ぶと、腕が 1px ずれます。逆も同じです。
 - Bedrock はサーバーでも同じ PNG をそのまま使うので、128×128 の見た目はどこでも同じになります。
@@ -210,7 +210,7 @@ Bedrock は 128×128（256×256 も可）なので、**高画質な写真の細�
 ### 適用方法
 
 - **Java Edition**: ランチャー → Skins → New skin → PNG を選択（64×64）
-- **Bedrock Edition**: ランチャーのスキン画面、またはゲーム内のキャラクター作成から PNG をインポート（64 / 128 / 256）
+- **Bedrock Edition**: ランチャーのスキン画面、またはゲーム内のキャラクター作成から PNG をインポート（64 / 128。256 は mod が必要）
 
 ## 3Dプレビュー
 
