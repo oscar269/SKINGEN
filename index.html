@@ -31,17 +31,38 @@
   }
   header h1 { font-size: 18px; margin: 0; }
   header p { margin: 0; color: var(--sub); font-size: 12px; }
-  header a.repo {
-    margin-left: auto;
+  .header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  header .pill, .changelog .pill {
     color: var(--sub);
     text-decoration: none;
     font-size: 12px;
+    font-family: inherit;
+    background: transparent;
     border: 1px solid var(--border);
     border-radius: 999px;
     padding: 4px 12px;
+    cursor: pointer;
     transition: color .15s, border-color .15s;
   }
-  header a.repo:hover { color: var(--text); border-color: var(--accent); }
+  header .pill:hover, .changelog .pill:hover { color: var(--text); border-color: var(--accent); }
+  .changelog {
+    position: fixed;
+    top: 56px;
+    right: 20px;
+    z-index: 20;
+    width: min(400px, calc(100vw - 40px));
+    max-height: calc(100vh - 90px);
+    overflow: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+  }
+  .changelog-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .changelog h2 { font-size: 14px; margin: 0; }
+  .changelog h3 { font-size: 12px; margin: 14px 0 6px; color: var(--accent); font-weight: 600; }
+  .changelog ul { margin: 0; padding-left: 18px; color: var(--sub); font-size: 12px; line-height: 1.65; }
   main {
     display: flex;
     flex-wrap: wrap;
@@ -84,6 +105,9 @@
   input[type="checkbox"] { accent-color: var(--accent); }
   .field { display: flex; flex-direction: column; gap: 6px; }
   .field > span { color: var(--sub); font-size: 12px; }
+  .field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .field-head > span { color: var(--sub); font-size: 12px; }
+  select.mini { padding: 2px 6px; font-size: 12px; }
   button {
     background: var(--accent);
     color: #fff;
@@ -97,6 +121,35 @@
   .previews { display: flex; gap: 16px; flex-wrap: wrap; }
   .preview-box { display: flex; flex-direction: column; gap: 8px; }
   .preview-box h2 { font-size: 13px; margin: 0; color: var(--sub); font-weight: 600; }
+  canvas.viewer {
+    display: block;
+    width: 100%;
+    max-width: 340px;
+    aspect-ratio: 17 / 22;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: radial-gradient(circle at 50% 38%, #272a33, #14151a 72%);
+    touch-action: none;
+    cursor: grab;
+  }
+  canvas.viewer.dragging { cursor: grabbing; }
+  .view-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--sub);
+  }
+  .view-tools label { display: flex; align-items: center; gap: 4px; }
+  button.ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--sub);
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 999px;
+  }
+  button.ghost:hover { color: var(--text); border-color: var(--accent); }
   canvas.pixelated {
     image-rendering: pixelated;
     border: 1px solid var(--border);
@@ -114,46 +167,92 @@
 <header>
   <h1>Minecraft Skin Generator</h1>
   <p>Generate 64x64 / 128x128 skins from images</p>
-  <a class="repo" href="https://github.com/oscar269/SKINGEN" target="_blank" rel="noopener">GitHub ↗</a>
+  <div class="header-actions">
+    <button id="changelogBtn" class="pill" type="button" aria-expanded="false" aria-controls="changelogPanel">Changelog</button>
+    <a class="pill" href="https://github.com/oscar269/SKINGEN" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
 </header>
+<div class="changelog" id="changelogPanel" hidden>
+  <div class="changelog-head">
+    <h2>Changelog</h2>
+    <button id="changelogClose" class="pill" type="button">Close</button>
+  </div>
+  <h3>2026-11-21</h3>
+  <ul>
+    <li>3D preview: drag to spin, wheel / pinch to zoom, auto rotate</li>
+    <li>Fit is set per image now (Front / Body / Back)</li>
+    <li>Face on sides and Face on back are separate switches</li>
+    <li>Face + body is the default mode</li>
+    <li>Fix: <code>contain</code> no longer leaves transparent holes in the legs and the top of the head</li>
+    <li>Fix: the Alex arm's bottom face was one pixel off</li>
+    <li>Fix: Face on back did nothing when a Back image was set</li>
+    <li>Fix: the head's sides showed a stretched border strip instead of the face</li>
+  </ul>
+  <h3>2026-11-18</h3>
+  <ul>
+    <li>Fix back-face mirroring, blank side faces and the blurry head</li>
+    <li>Face + body mode with separate face and body images</li>
+    <li>Bilingual README (Japanese / English)</li>
+    <li>Browser-based skin generator (64 / 128 / 256)</li>
+  </ul>
+</div>
 <main>
   <section class="panel controls">
     <div class="field">
-      <span id="frontLabel">Front image (required)</span>
+      <div class="field-head">
+        <span id="frontLabel">Front image (required)</span>
+        <select id="fitFront" class="mini" title="How the front image is fitted">
+          <option value="contain" selected>contain</option>
+          <option value="cover">cover</option>
+          <option value="stretch">stretch</option>
+        </select>
+      </div>
       <div class="dropzone" id="dropFront"><span>Click or drag &amp; drop</span></div>
       <input type="file" id="fileFront" accept="image/*" hidden>
     </div>
-    <div class="field" id="fieldBody" hidden>
-      <span>Body image (optional; blurred face is used when empty)</span>
+    <div class="field" id="fieldBody">
+      <div class="field-head">
+        <span>Body image (optional; blurred face is used when empty)</span>
+        <select id="fitBody" class="mini" title="How the body image is fitted">
+          <option value="contain" selected>contain</option>
+          <option value="cover">cover</option>
+          <option value="stretch">stretch</option>
+        </select>
+      </div>
       <div class="dropzone" id="dropBody"><span>Click or drag &amp; drop</span></div>
       <input type="file" id="fileBody" accept="image/*" hidden>
     </div>
     <div class="field" id="fieldBack">
-      <span>Back image (optional; a darkened front is used by default)</span>
+      <div class="field-head">
+        <span>Back image (optional; a darkened front is used by default)</span>
+        <select id="fitBack" class="mini" title="How the back image is fitted">
+          <option value="contain" selected>contain</option>
+          <option value="cover">cover</option>
+          <option value="stretch">stretch</option>
+        </select>
+      </div>
       <div class="dropzone" id="dropBack"><span>Click or drag &amp; drop</span></div>
       <input type="file" id="fileBack" accept="image/*" hidden>
     </div>
     <div class="row">
       <label>Mode</label>
       <select id="mode">
-        <option value="body" selected>Whole body photo</option>
+        <option value="body">Whole body photo</option>
         <option value="face">Face only</option>
-        <option value="facebody">Face + body (separate images)</option>
+        <option value="facebody" selected>Face + body (separate images)</option>
       </select>
     </div>
     <p class="hint" id="modeHint"></p>
+    <div class="row" id="faceWrapRow">
+      <label><input type="checkbox" id="faceSides" checked> Face on sides</label>
+      <label><input type="checkbox" id="faceBack" checked> Face on back</label>
+    </div>
     <div class="row">
       <label>Size</label>
       <select id="size">
         <option value="64">64 x 64 (Java)</option>
         <option value="128" selected>128 x 128</option>
         <option value="256">256 x 256</option>
-      </select>
-      <label>Fit</label>
-      <select id="fit">
-        <option value="contain" selected>contain (with margins)</option>
-        <option value="cover">cover (crop overflow)</option>
-        <option value="stretch">stretch</option>
       </select>
     </div>
     <div class="row">
@@ -167,6 +266,7 @@
     <button id="download" disabled>Download skin (PNG)</button>
     <p class="hint">
       The skin regenerates automatically whenever you change a setting.<br>
+      Drag the 3D preview to spin the model; wheel or pinch zooms, double-click resets.<br>
       Upload the downloaded PNG in your Minecraft profile settings to apply it.
     </p>
   </section>
@@ -176,8 +276,13 @@
       <canvas id="texPreview" class="pixelated checker" width="384" height="384"></canvas>
     </div>
     <div class="panel preview-box">
-      <h2>Front preview</h2>
-      <canvas id="charPreview" class="pixelated" width="192" height="384"></canvas>
+      <h2>3D preview</h2>
+      <canvas id="charPreview" class="viewer" width="340" height="440"></canvas>
+      <div class="view-tools">
+        <label><input type="checkbox" id="spin" checked> Auto rotate</label>
+        <button id="resetView" class="ghost" type="button">Reset view</button>
+      </div>
+      <p class="hint">Drag to spin, wheel / pinch to zoom, double-click to reset.</p>
     </div>
   </section>
 </main>
@@ -251,25 +356,45 @@ function fitToCanvas(src, w, h, mode, bg, pixel) {
     x.fillStyle = `rgba(${bg.r},${bg.g},${bg.b},${bg.a / 255})`;
     x.fillRect(0, 0, w, h);
   }
-  if (mode === "contain") {
-    x.drawImage(resized, (w - nw) >> 1, (h - nh) >> 1);
-  } else { // cover: crop the center
-    const left = (nw - w) >> 1, top = (nh - h) >> 1;
-    x.drawImage(resized, left, top, w, h, 0, 0, w, h);
+  const left = (w - nw) >> 1, top = (h - nh) >> 1;
+  if (mode === "cover") { // cover: crop the centre
+    x.drawImage(resized, (nw - w) >> 1, (nh - h) >> 1, w, h, 0, 0, w, h);
+    return c;
+  }
+  // contain: centre the image, then stretch its border pixels into the padding.
+  // A photo is rarely exactly 16:32, and any transparent padding would punch a
+  // hole through a body part (half a leg, half the head), so fill it instead.
+  x.drawImage(resized, left, top);
+  if (top > 0) {
+    x.drawImage(resized, 0, 0, nw, 1, left, 0, nw, top);
+    x.drawImage(resized, 0, nh - 1, nw, 1, left, top + nh, nw, h - top - nh);
+  }
+  if (left > 0) {
+    x.drawImage(resized, 0, 0, 1, nh, 0, top, left, nh);
+    x.drawImage(resized, nw - 1, 0, 1, nh, left + nw, top, w - left - nw, nh);
+  }
+  if (top > 0 && left > 0) { // corners use the nearest 1x1 pixel
+    x.drawImage(resized, 0, 0, 1, 1, 0, 0, left, top);
+    x.drawImage(resized, nw - 1, 0, 1, 1, left + nw, 0, w - left - nw, top);
+    x.drawImage(resized, 0, nh - 1, 1, 1, 0, top + nh, left, h - top - nh);
+    x.drawImage(resized, nw - 1, nh - 1, 1, 1, left + nw, top + nh, w - left - nw, h - top - nh);
   }
   return c;
 }
 function pasteBox(skin, origin, w, h, d, front, back, s, edge = null) {
   // Paste the unwrapped faces of a box (w x h x d) onto the skin.
-  // If edge is given, side/top/bottom faces are built from its border pixels.
+  // edge = { img, side? }: `img` supplies the border pixels for the top/bottom and
+  // side faces; `side` (optional, D x H) is drawn on both side faces instead of the
+  // stretched border column.
   const [u, v] = origin, W = w * s, H = h * s, D = d * s;
-  const f = edge ?? front;
+  const f = edge ? edge.img : front;
+  const side = edge && edge.side ? shade(resize(edge.side, D, H), 0.85) : null;
   const faces = [
     [shade(resize(crop(f, 0, 0, W, 1), W, D), 1.1),   u + d,     v],     // top
     [shade(resize(crop(f, 0, H - 1, W, H), W, D), 0.6), u + d + w, v],   // bottom
-    [shade(resize(crop(f, 0, 0, 1, H), D, H), 0.85),  u,         v + d], // right
+    [side ?? shade(resize(crop(f, 0, 0, 1, H), D, H), 0.85), u,   v + d], // right
     [front,                                          u + d,     v + d], // front
-    [shade(resize(crop(f, W - 1, 0, W, H), D, H), 0.85), u + d + w, v + d], // left
+    [side ?? shade(resize(crop(f, W - 1, 0, W, H), D, H), 0.85), u + d + w, v + d], // left
     [back,                                           u + 2 * d + w, v + d], // back
   ];
   const x = skin.getContext("2d");
@@ -297,12 +422,13 @@ const LAYOUT = [
   ["l_leg", [16, 48], 4, 12, 4],
   ["l_arm", [32, 48], null, 12, 4],
 ];
-function buildSkinCore(frontSrc, backSrc, size, slim, fit, bg, pixel) {
+function buildSkinCore(frontSrc, backSrc, size, slim, fitFront, fitBack, bg, pixel, out = null) {
   const s = size / 64, arm = slim ? 3 : 4;
-  const f = makeParts(fitToCanvas(frontSrc, CHAR_W * s, CHAR_H * s, fit, bg, pixel), s, arm);
+  const f = makeParts(fitToCanvas(frontSrc, CHAR_W * s, CHAR_H * s, fitFront, bg, pixel), s, arm);
   const b = backSrc
-    ? makeParts(fitToCanvas(backSrc, CHAR_W * s, CHAR_H * s, fit, bg, pixel), s, arm, true)
+    ? makeParts(fitToCanvas(backSrc, CHAR_W * s, CHAR_H * s, fitBack, bg, pixel), s, arm, true)
     : Object.fromEntries(Object.entries(f).map(([k, v]) => [k, shade(flipX(v), 0.85)]));
+  if (out) { out.f = f; out.b = b; } // the caller may reuse the parts (e.g. for the head)
   const skin = mkCanvas(size, size);
   for (const [name, origin, w, h, d] of LAYOUT) {
     const pw = w ?? arm;
@@ -311,35 +437,47 @@ function buildSkinCore(frontSrc, backSrc, size, slim, fit, bg, pixel) {
   return skin;
 }
 const TRANSPARENT = { r: 0, g: 0, b: 0, a: 0 };
-function pasteHead(skin, faceSrc, backSrc, size, slim, fit, bg, pixel) {
-  // The face goes on the front of the head. The other faces reuse the same square
-  // (or the back image's head when one is given) so the head stays as sharp as the
-  // face instead of dissolving into a blurred fur colour.
+function pasteHead(skin, faceSrc, backSrc, size, slim, fitFace, fitBack, bg, pixel, bodyParts = null, opts = {}) {
+  // The face goes on the front of the head. The side faces and the back face can each
+  // either take the face image itself (so it wraps around the head) or keep the body
+  // texture. `bodyParts` holds the body texture's head crop, used as that fallback.
   const s = size / 64;
-  const face = fitToCanvas(faceSrc, 8 * s, 8 * s, "cover", TRANSPARENT, pixel);
-  const back = backSrc
-    ? makeParts(fitToCanvas(backSrc, CHAR_W * s, CHAR_H * s, fit, bg, pixel), s, slim, true).head
-    : shade(flipX(face), 0.85);
-  pasteBox(skin, [0, 0], 8, 8, 8, face, back, s, face);
+  const face = fitToCanvas(faceSrc, 8 * s, 8 * s, fitFace, TRANSPARENT, pixel);
+  const backHead = backSrc
+    ? makeParts(fitToCanvas(backSrc, CHAR_W * s, CHAR_H * s, fitBack, bg, pixel), s, slim ? 3 : 4, true).head
+    : null;
+  const wrapSides = opts.sides !== false, wrapBack = opts.back !== false;
+  const sides = wrapSides ? face : (bodyParts ? bodyParts.f.head : null);
+  // "Face on back" means the face image, full stop - the back image only takes over
+  // when the face is not wrapped there. Otherwise both settings would draw the same
+  // head-back and the checkbox would look broken.
+  const back = wrapBack
+    ? shade(flipX(face), 0.85)
+    : (backHead ?? (bodyParts ? bodyParts.b.head : shade(flipX(face), 0.85)));
+  pasteBox(skin, [0, 0], 8, 8, 8, face, back, s,
+    sides ? { img: sides, side: wrapSides ? face : null } : null);
 }
-function buildFaceSkin(src, size, slim, pixel) {
+function buildFaceSkin(src, size, slim, pixel, opts, fitFace) {
   // Face photo mode: put the face on the front of the head and paint the body with blurred fur color
   const blurred = blurCanvas(src, Math.max(1, Math.max(src.width, src.height) / 12 | 0));
-  const skin = buildSkinCore(blurred, null, size, slim, "stretch", TRANSPARENT, false);
-  pasteHead(skin, src, null, size, slim, "cover", TRANSPARENT, pixel);
+  const parts = {};
+  // The blurred copy is only a colour wash, so it is always stretched flat.
+  const skin = buildSkinCore(blurred, null, size, slim, "stretch", "stretch", TRANSPARENT, false, parts);
+  pasteHead(skin, src, null, size, slim, fitFace, "stretch", TRANSPARENT, pixel, parts, opts);
   return skin;
 }
 
-function buildFaceBodySkin(faceSrc, bodySrc, backSrc, size, slim, fit, bg, pixel) {
+function buildFaceBodySkin(faceSrc, bodySrc, backSrc, size, slim, fitFace, fitBody, fitBack, bg, pixel, opts) {
   // Face + body mode: the face image goes on the head, the body image on everything else.
   // Without a body image the body falls back to the blurred face (same as face-only mode).
   const faceBlur = blurCanvas(faceSrc, Math.max(1, Math.max(faceSrc.width, faceSrc.height) / 12 | 0));
   // The back image only describes the body when there is a body image to lay out.
   const headBack = bodySrc ? backSrc : null;
+  const parts = {};
   const skin = bodySrc
-    ? buildSkinCore(bodySrc, backSrc, size, slim, fit, bg, pixel)
-    : buildSkinCore(faceBlur, null, size, slim, "stretch", TRANSPARENT, false);
-  pasteHead(skin, faceSrc, headBack, size, slim, fit, bg, pixel);
+    ? buildSkinCore(bodySrc, backSrc, size, slim, fitBody, fitBack, bg, pixel, parts)
+    : buildSkinCore(faceBlur, null, size, slim, "stretch", "stretch", TRANSPARENT, false, parts);
+  pasteHead(skin, faceSrc, headBack, size, slim, fitFace, fitBack, bg, pixel, parts, opts);
   return skin;
 }
 
@@ -415,25 +553,27 @@ function generate() {
   const slim = $("slim").checked, pixel = $("pixel").checked;
   const bg = $("bgTransparent").checked ? { r: 0, g: 0, b: 0, a: 0 } : hexToRgb($("bg").value);
   const mode = $("mode").value;
+  const wrap = { sides: $("faceSides").checked, back: $("faceBack").checked };
+  const fitFront = $("fitFront").value, fitBody = $("fitBody").value, fitBack = $("fitBack").value;
   if (mode === "face") {
-    currentSkin = buildFaceSkin(frontImg, size, slim, pixel);
+    currentSkin = buildFaceSkin(frontImg, size, slim, pixel, wrap, fitFront);
   } else if (mode === "facebody") {
-    currentSkin = buildFaceBodySkin(frontImg, bodyImg, backImg, size, slim, $("fit").value, bg, pixel);
+    currentSkin = buildFaceBodySkin(frontImg, bodyImg, backImg, size, slim, fitFront, fitBody, fitBack, bg, pixel, wrap);
   } else {
-    currentSkin = buildSkinCore(frontImg, backImg, size, slim, $("fit").value, bg, pixel);
+    currentSkin = buildSkinCore(frontImg, backImg, size, slim, fitFront, fitBack, bg, pixel);
   }
   $("download").disabled = false;
   drawTexture(currentSkin, size);
-  drawCharPreview(currentSkin, size, slim ? 3 : 4);
+  setPreviewSkin(currentSkin, slim);
 }
 function updateUi() {
   const mode = $("mode").value, faceOnly = mode === "face", faceBody = mode === "facebody";
   $("frontLabel").textContent = faceOnly || faceBody ? "Face image (required)" : "Front image (required)";
   $("fieldBody").hidden = !faceBody;
   $("fieldBack").hidden = faceOnly;
-  // Fit / background only matter when a body image (or a whole body photo) is being laid out
+  $("faceWrapRow").hidden = !(faceOnly || faceBody);
+  // The background colour only matters where a body is being laid out
   const usesBody = mode === "body" || (faceBody && bodyImg);
-  $("fit").disabled = !usesBody;
   $("bgTransparent").disabled = !usesBody;
   $("bg").disabled = !usesBody;
   $("modeHint").textContent = faceOnly
@@ -454,36 +594,252 @@ function drawTexture(skin, size) {
   x.clearRect(0, 0, tp.width, tp.height);
   x.drawImage(skin, 0, 0, tp.width, tp.height);
 }
-function drawCharPreview(skin, size, arm) {
-  const cp = $("charPreview");
-  const s = size / 64, zoom = Math.max(2, Math.floor(384 / CHAR_H));
-  cp.width = CHAR_W * zoom;
-  cp.height = CHAR_H * zoom;
-  const x = cp.getContext("2d");
-  x.imageSmoothingEnabled = false;
-  x.clearRect(0, 0, cp.width, cp.height);
-  // Arrange the front face (u+d, v+d) of each part into a full-body layout
-  const parts = [
-    ["head", 4, 0], ["body", 4, 8],
-    ["r_arm", 0, 8], ["l_arm", CHAR_W - arm, 8],
-    ["r_leg", 4, 20], ["l_leg", 8, 20],
+/* ---------- 3D preview ---------- */
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const HOME_VIEW = { yaw: 0.38, pitch: 0.1, zoom: 1 };
+
+function modelLayout(slim) {
+  // Player model in skin pixels (1 unit = 1 px at 64x64):
+  // +x = the viewer's right, +y = up, +z = towards the viewer.
+  const arm = slim ? 3 : 4;
+  const ax = 4 + arm / 2; // arm centre: 6 for Steve, 5.5 for Alex
+  const mk = (uv, w, h, d, cx, cy, cz, grow = 0) => ({
+    uv,
+    uw: w, uh: h, ud: d, // texture layout size
+    w: w + grow * 2, h: h + grow * 2, d: d + grow * 2, // the box itself
+    c: [cx, cy, cz],
+  });
+  return [
+    // [base layer, overlay layer] - the overlay sits 0.25 px (hat: 0.5) outside the base
+    [mk([0, 0], 8, 8, 8, 0, 28, 0), mk([32, 0], 8, 8, 8, 0, 28, 0, 0.5)],        // head
+    [mk([16, 16], 8, 12, 4, 0, 18, 0), mk([16, 32], 8, 12, 4, 0, 18, 0, 0.25)],  // body
+    [mk([40, 16], arm, 12, 4, -ax, 18, 0), mk([40, 32], arm, 12, 4, -ax, 18, 0, 0.25)],  // right arm
+    [mk([32, 48], arm, 12, 4, ax, 18, 0), mk([48, 48], arm, 12, 4, ax, 18, 0, 0.25)],    // left arm
+    [mk([0, 16], 4, 12, 4, -1.9, 6, -0.1), mk([0, 32], 4, 12, 4, -1.9, 6, -0.1, 0.25)],  // right leg
+    [mk([16, 48], 4, 12, 4, 1.9, 6, -0.1), mk([0, 48], 4, 12, 4, 1.9, 6, -0.1, 0.25)],   // left leg
   ];
-  for (const [name, origin] of LAYOUT.map(l => [l[0], l[1]])) {
-    const [u, v] = origin;
-    const entry = LAYOUT.find(l => l[0] === name);
-    const w = entry[2] ?? arm, h = entry[3], d = entry[4];
-    const [, gx, gy] = parts.find(p => p[0] === name);
-    x.drawImage(skin, (u + d) * s, (v + d) * s, w * s, h * s,
-                gx * zoom, gy * zoom, w * zoom, h * zoom);
-  }
 }
-for (const id of ["size", "fit", "slim", "mode", "pixel", "bgTransparent", "bg"]) {
+
+function boxFaces(part, s) {
+  // The six faces of one cuboid: g = corners in model space, t = the same
+  // corners in texture pixels. The texture layout is the vanilla one, where a
+  // face always shares its border columns/rows with the face next to it.
+  const hx = part.w / 2, hy = part.h / 2, hz = part.d / 2;
+  const [cx, cy, cz] = part.c;
+  const P = (x, y, z) => [cx + x, cy + y, cz + z];
+  const u0 = part.uv[0], v0 = part.uv[1];
+  const T = (dx, dy) => [(u0 + dx) * s, (v0 + dy) * s];
+  const W = part.uw, H = part.uh, D = part.ud;
+  return [
+    { n: [0, 0, 1], shade: 0.02, // front
+      g: [P(-hx, hy, hz), P(hx, hy, hz), P(-hx, -hy, hz), P(hx, -hy, hz)],
+      t: [T(D, D), T(D + W, D), T(D, D + H), T(D + W, D + H)] },
+    { n: [0, 0, -1], shade: 0.08, // back
+      g: [P(hx, hy, -hz), P(-hx, hy, -hz), P(hx, -hy, -hz), P(-hx, -hy, -hz)],
+      t: [T(2 * D + W, D), T(2 * D + 2 * W, D), T(2 * D + W, D + H), T(2 * D + 2 * W, D + H)] },
+    { n: [-1, 0, 0], shade: 0.14, // the player's right side
+      g: [P(-hx, hy, -hz), P(-hx, hy, hz), P(-hx, -hy, -hz), P(-hx, -hy, hz)],
+      t: [T(0, D), T(D, D), T(0, D + H), T(D, D + H)] },
+    { n: [1, 0, 0], shade: 0.14, // the player's left side
+      g: [P(hx, hy, hz), P(hx, hy, -hz), P(hx, -hy, hz), P(hx, -hy, -hz)],
+      t: [T(W + D, D), T(W + 2 * D, D), T(W + D, D + H), T(W + 2 * D, D + H)] },
+    { n: [0, 1, 0], shade: 0, // top
+      g: [P(-hx, hy, -hz), P(hx, hy, -hz), P(-hx, hy, hz), P(hx, hy, hz)],
+      t: [T(D, 0), T(D + W, 0), T(D, D), T(D + W, D)] },
+    { n: [0, -1, 0], shade: 0.26, // bottom
+      g: [P(-hx, -hy, hz), P(hx, -hy, hz), P(-hx, -hy, -hz), P(hx, -hy, -hz)],
+      t: [T(W + D, D), T(2 * W + D, D), T(W + D, 0), T(2 * W + D, 0)] },
+  ];
+}
+
+function buildFaces(skin, slim) {
+  const s = skin.width / 64;
+  const TW = skin.width, TH = skin.height;
+  const { data } = skin.getContext("2d").getImageData(0, 0, TW, TH);
+  const hasAlpha = (x0, y0, x1, y1) => {
+    const xa = Math.max(0, Math.floor(x0)), xb = Math.min(TW, Math.ceil(x1));
+    const ya = Math.max(0, Math.floor(y0)), yb = Math.min(TH, Math.ceil(y1));
+    for (let y = ya; y < yb; y++) {
+      for (let x = xa; x < xb; x++) if (data[(y * TW + x) * 4 + 3]) return true;
+    }
+    return false;
+  };
+  const faces = [];
+  for (const layers of modelLayout(slim)) {
+    for (const part of layers) {
+      for (const face of boxFaces(part, s)) {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const [tx, ty] of face.t) {
+          x0 = Math.min(x0, tx); y0 = Math.min(y0, ty);
+          x1 = Math.max(x1, tx); y1 = Math.max(y1, ty);
+        }
+        // Fully transparent faces (e.g. the untouched overlay layer) are skipped
+        if (!hasAlpha(x0, y0, x1, y1)) continue;
+        faces.push({ ...face, box: [x0, y0, x1 - x0, y1 - y0] });
+      }
+    }
+  }
+  return faces;
+}
+
+const view = { yaw: HOME_VIEW.yaw, pitch: HOME_VIEW.pitch, zoom: 1, dragging: false, dirty: true, skin: null, faces: null };
+
+function setPreviewSkin(skin, slim) {
+  view.skin = skin;
+  view.faces = buildFaces(skin, slim);
+  view.dirty = true;
+}
+
+function renderPreview() {
+  const cv = $("charPreview");
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.max(1, Math.round(cv.clientWidth * dpr));
+  const h = Math.max(1, Math.round(cv.clientHeight * dpr));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  const x = cv.getContext("2d");
+  x.setTransform(1, 0, 0, 1, 0, 0);
+  x.clearRect(0, 0, w, h);
+  if (!view.faces) {
+    x.fillStyle = "#9aa0ac";
+    x.font = `${12 * dpr}px "Segoe UI", sans-serif`;
+    x.textAlign = "center";
+    x.textBaseline = "middle";
+    x.fillText("Load an image to preview the skin", w / 2, h / 2);
+    return;
+  }
+  const unit = Math.min(h * 0.78 / 33, w * 0.9 / 18) * view.zoom;
+  const midX = w / 2, midY = h / 2;
+  const cosY = Math.cos(view.yaw), sinY = Math.sin(view.yaw);
+  const cosP = Math.cos(view.pitch), sinP = Math.sin(view.pitch);
+  const project = (px, py, pz) => {
+    const y = py - 16; // the model is 32 px tall, so centre it on y = 0
+    const y1 = y * cosP - pz * sinP;
+    const z1 = y * sinP + pz * cosP;
+    return [midX + (px * cosY + z1 * sinY) * unit, midY - y1 * unit, -px * sinY + z1 * cosY];
+  };
+  const normalZ = ([nx, ny, nz]) => {
+    const y1 = ny * cosP - nz * sinP;
+    const z1 = ny * sinP + nz * cosP;
+    return -nx * sinY + z1 * cosY;
+  };
+  const draw = [];
+  for (const face of view.faces) {
+    if (normalZ(face.n) <= 0) continue; // back-facing
+    const q = face.g.map(([px, py, pz]) => project(px, py, pz));
+    draw.push({ face, q, depth: (q[0][2] + q[1][2] + q[2][2] + q[3][2]) / 4 });
+  }
+  draw.sort((a, b) => a.depth - b.depth); // painter's algorithm: far to near
+  x.imageSmoothingEnabled = true;
+  for (const { face, q } of draw) {
+    const [s0, s1, s2] = q;
+    const [t0, t1, t2] = face.t;
+    const e1x = t1[0] - t0[0], e1y = t1[1] - t0[1];
+    const e2x = t2[0] - t0[0], e2y = t2[1] - t0[1];
+    const det = e1x * e2y - e1y * e2x;
+    if (Math.abs(det) < 1e-6) continue;
+    const f1x = s1[0] - s0[0], f1y = s1[1] - s0[1];
+    const f2x = s2[0] - s0[0], f2y = s2[1] - s0[1];
+    const m00 = (f1x * e2y - f2x * e1y) / det;
+    const m01 = (f2x * e1x - f1x * e2x) / det;
+    const m10 = (f1y * e2y - f2y * e1y) / det;
+    const m11 = (f2y * e1x - f1y * e2x) / det;
+    const [bx, by, bw, bh] = face.box;
+    // drawImage's source rect starts at (bx, by), so shift the origin to match
+    const ox = s0[0] + m00 * (bx - t0[0]) + m01 * (by - t0[1]);
+    const oy = s0[1] + m10 * (bx - t0[0]) + m11 * (by - t0[1]);
+    x.setTransform(m00, m10, m01, m11, ox, oy);
+    x.drawImage(view.skin, bx, by, bw, bh, 0, 0, bw, bh);
+    if (face.shade > 0) {
+      x.setTransform(1, 0, 0, 1, 0, 0);
+      x.beginPath();
+      x.moveTo(q[0][0], q[0][1]);
+      x.lineTo(q[1][0], q[1][1]);
+      x.lineTo(q[3][0], q[3][1]);
+      x.lineTo(q[2][0], q[2][1]);
+      x.closePath();
+      x.fillStyle = `rgba(0,0,0,${face.shade})`;
+      x.fill();
+    }
+  }
+  x.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+function resetView() {
+  view.yaw = HOME_VIEW.yaw;
+  view.pitch = HOME_VIEW.pitch;
+  view.zoom = 1;
+  view.dirty = true;
+}
+
+(function initViewer() {
+  const cv = $("charPreview");
+  let lastX = 0, lastY = 0;
+  cv.addEventListener("pointerdown", e => {
+    cv.setPointerCapture(e.pointerId);
+    view.dragging = true;
+    cv.classList.add("dragging");
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+  cv.addEventListener("pointermove", e => {
+    if (!view.dragging) return;
+    view.yaw += (e.clientX - lastX) * 0.01;
+    view.pitch = clamp(view.pitch + (e.clientY - lastY) * 0.01, -1.35, 1.35);
+    lastX = e.clientX;
+    lastY = e.clientY;
+    view.dirty = true;
+  });
+  const endDrag = () => {
+    view.dragging = false;
+    cv.classList.remove("dragging");
+  };
+  cv.addEventListener("pointerup", endDrag);
+  cv.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("wheel", e => {
+    e.preventDefault();
+    view.zoom = clamp(view.zoom * Math.exp(-e.deltaY * 0.0015), 0.5, 2.5);
+    view.dirty = true;
+  }, { passive: false });
+  cv.addEventListener("dblclick", resetView);
+  $("resetView").addEventListener("click", resetView);
+  $("spin").addEventListener("change", () => { view.dirty = true; });
+  window.addEventListener("resize", () => { view.dirty = true; });
+
+  let last = 0;
+  const tick = t => {
+    const dt = last ? Math.min(0.05, (t - last) / 1000) : 0;
+    last = t;
+    if ($("spin").checked && !view.dragging) {
+      view.yaw += dt * 0.6;
+      view.dirty = true;
+    }
+    if (view.dirty) { renderPreview(); view.dirty = false; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+})();
+for (const id of ["size", "fitFront", "fitBody", "fitBack", "slim", "mode", "pixel", "bgTransparent", "bg", "faceSides", "faceBack"]) {
   $(id).addEventListener("change", () => {
     updateUi();
     generate();
   });
 }
 updateUi();
+(function initChangelog() {
+  const btn = $("changelogBtn"), panel = $("changelogPanel");
+  const setOpen = open => {
+    panel.hidden = !open;
+    btn.setAttribute("aria-expanded", String(open));
+  };
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    setOpen(panel.hidden);
+  });
+  panel.addEventListener("click", e => e.stopPropagation());
+  $("changelogClose").addEventListener("click", () => setOpen(false));
+  document.addEventListener("click", () => setOpen(false));
+  document.addEventListener("keydown", e => { if (e.key === "Escape") setOpen(false); });
+})();
 $("download").addEventListener("click", () => {
   if (!currentSkin) return;
   currentSkin.toBlob(blob => {
