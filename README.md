@@ -3,9 +3,10 @@
 # SKINGEN — Minecraft Skin Generator
 
 Put a real photo on a Minecraft character. One HTML file, no install, no server, no network:
-open it, drop a picture, download a skin.
+open it, drop a picture, download a skin. Bedrock Edition takes 128×128 skins (256×256 as well),
+so a high-resolution photo keeps its detail in game.
 
-**[▶ Open the tool](https://oscar269.github.io/SKINGEN/)** · [日本語](#日本語)
+**[▶ https://oscar269.github.io/SKINGEN/](https://oscar269.github.io/SKINGEN/)** · [日本語](#日本語)
 
 ![SKINGEN in use](image.png)
 
@@ -22,7 +23,7 @@ open it, drop a picture, download a skin.
 
 ## Quick start
 
-1. Open the [hosted version](https://oscar269.github.io/SKINGEN/) or double-click `index.html`.
+1. Open **https://oscar269.github.io/SKINGEN/** (or double-click `index.html`).
 2. Drop your **face photo** into *Front image* and your **body / fur photo** into *Body image*.
    (Both boxes are visible in the default `Face + body` mode; for a single full-body photo switch Mode to `Whole body photo`.)
 3. Tune each image with its own `contain` / `cover` / `stretch` select, and decide whether the face should appear on the head's sides and back.
@@ -147,8 +148,9 @@ No license has been specified for this repository yet.
 # 日本語
 
 写真をそのまま Minecraft のキャラクターに。`index.html` を開くだけで動き、インストールもサーバもネット接続も要りません。
+Bedrock は 128×128（256×256 も可）なので、**高画質な写真の細部をそのままスキンにできます**。
 
-**[▶ ブラウザですぐ使う](https://oscar269.github.io/SKINGEN/)** · [English](#top)
+**[▶ https://oscar269.github.io/SKINGEN/](https://oscar269.github.io/SKINGEN/)** · [English](#top)
 
 ![使用中の画面](image.png)
 
@@ -165,7 +167,7 @@ No license has been specified for this repository yet.
 
 ## 使い方
 
-1. [公開版](https://oscar269.github.io/SKINGEN/) を開くか、`index.html` をダブルクリックします。
+1. **https://oscar269.github.io/SKINGEN/** を開くか、`index.html` をダブルクリックします。
 2. **Front image** に顔写真、**Body image** に体（毛並みなど）の写真をドロップします。
    （既定の `Face + body` では両方の枠が出ます。1枚の全身写真だけで作るなら Mode を `Whole body photo` に。）
 3. 画像ごとの `contain` / `cover` / `stretch` を調整し、顔を頭の側面・背面に回すかを決めます。
