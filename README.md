@@ -47,7 +47,7 @@ so a high-resolution photo keeps its detail in game (256×256 needs a skin mod).
 | Back image + Fit | Optional; a darkened mirror of the front is used when empty |
 | Mode | One of the three modes above |
 | Size | 64×64 (Java) / 128×128 (Bedrock) / 256×256 (only with a skin mod) |
-| Slim arms (Alex) | Use this when you pick the Alex model in-game; leave it off for Steve |
+| Arms (Steve / Alex) | Pick the arm model you use in-game; the arm width is part of the skin format |
 | Pixel art | Nearest-neighbour scaling instead of smooth, for pixel-art sources |
 | Transparent margins | Keep transparent source pixels transparent; turn it off to fill them with the colour picker value |
 | Face on sides / Face on back | Shown in the face modes. On: the face photo is put on the head's sides / back, off: that face is built from the body image |
@@ -99,7 +99,7 @@ so a high-resolution photo keeps its detail in game (256×256 needs a skin mod).
 | Nothing shows up, Download stays disabled | Load a Front image first |
 | The skin is transparent or black | The source is a transparent PNG — turn off `Transparent margins` and pick a colour |
 | Everything looks blurry | Turn on `Pixel art`, or use a larger source |
-| Arms are shifted by a pixel | `Slim arms (Alex)` must match the model you select in-game |
+| Arms are shifted by a pixel | The `Arms` setting must match the model you select in-game |
 | A leg or the top of the head looks cut | Try `cover` for that image's Fit |
 | The face is not on the sides of the head | Turn on `Face on sides` |
 | The back looks like the front | The back image is mirrored on purpose; use a photo taken from behind |
@@ -112,6 +112,7 @@ The same list is inside the tool (the **Changelog** button, top right).
 
 ### 2026-11-21
 
+- Redesigned the interface: an equal-height three-column editor with compact one-row upload slots, segmented controls and switches
 - 3D preview: drag to spin, wheel / pinch to zoom, auto rotate, overlay layers
 - Fit is set per image (front / body / back)
 - Face wrapping split into `Face on sides` and `Face on back`; the head's sides now get the face itself
@@ -191,7 +192,7 @@ Bedrock は 128×128 なので、**高画質な写真の細部をそのままス
 | Back image + Fit | 任意。未指定なら正面を左右反転して暗くしたもの |
 | Mode | 上の3モード |
 | Size | 64×64（Java）/ 128×128（Bedrock）/ 256×256（mod 必須） |
-| Slim arms (Alex) | ゲーム側で Alex を選ぶときはオン、Steve ならオフ |
+| Arms (Steve / Alex) | ゲームで使う腕のモデルを選択。腕の太さはスキン形式の一部です |
 | Pixel art | 縮小時に補間せず最近傍で縮小（ドット絵向け） |
 | Transparent margins | 元画像の透過部分を透明のまま残す。オフにするとカラーピッカーの色で塗る |
 | Face on sides / Face on back | 顔モードのみ表示。オンで顔画像を頭の側面 / 背面に、オフでその面を体画像から作る |
@@ -243,7 +244,7 @@ Bedrock は 128×128 なので、**高画質な写真の細部をそのままス
 | 何も表示されない / Download が押せない | まず Front image に画像を入れる |
 | スキンが真っ透明 / 真っ黒 | 元画像が透過 PNG。`Transparent margins` をオフにして色を指定する |
 | 全体的にぼやける | `Pixel art` をオンにする、または元画像を大きくする |
-| 腕が 1px ずれる | `Slim arms (Alex)` とゲーム側のモデルを一致させる |
+| 腕が 1px ずれる | `Arms` の設定とゲーム側のモデルを一致させる |
 | 脚や頭の上が欠けて見える | その画像の Fit を `cover` にしてみる |
 | 頭の側面に顔が無い | `Face on sides` をオンにする |
 | 背中が正面と同じに見える | 背面は仕様どおり反転。後ろから撮った写真を `Back image` に入れる |
@@ -256,6 +257,7 @@ Bedrock は 128×128 なので、**高画質な写真の細部をそのままス
 
 ### 2026-11-21
 
+- UI を刷新: 高さの揃った3カラム、1行型のアップロード欄、セグメントコントロール
 - 3Dプレビュー（ドラッグで回転、ホイール / ピンチで拡大、自動回転、重ね着レイヤー対応）
 - Fit を画像ごとに分離（前面 / 体 / 背面）
 - 顔の回り込みを `Face on sides` / `Face on back` に分割。側面には顔そのものを貼るように

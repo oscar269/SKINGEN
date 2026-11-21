@@ -3,179 +3,829 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>Minecraft Skin Generator</title>
 <style>
+  /* ==================================================================
+     Compact three-column editor, equal-height cards.
+     All three panels share one grid row and stretch to the tallest
+     item (the 3D preview: head + capped stage + footer). The sidebar
+     and export panel align to that same row height.
+     ================================================================== */
   :root {
-    --bg: #17181d;
-    --panel: #1f2128;
-    --border: #2e313c;
-    --text: #e6e7eb;
-    --sub: #9aa0ac;
-    --accent: #4f8cff;
+    --bg:            #121316;
+    --panel:         #191b1f;
+    --surface-1:     #202227;
+    --surface-2:     #26292f;
+    --surface-3:     #2d3038;
+    --border:        #26282e;
+    --border-strong: #363a42;
+    --text-1:        #eceef1;
+    --text-2:        #a6abb5;
+    --text-3:        #858a94;
+    --accent:        #46c97a;
+    --accent-strong: #3db46b;
+    --accent-ink:    #06130b;
+    --accent-soft:   rgba(70, 201, 122, .13);
+    --focus:         rgba(70, 201, 122, .65);
+    --wait:          #d9a441;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --dur: 150ms;
+    --ease: cubic-bezier(.4, 0, .2, 1);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, .35);
+    --shadow-2: 0 16px 40px rgba(0, 0, 0, .5);
+    --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --header-h: 44px;
+    --viewer-max: 440px;   /* canvas height cap, kept in sync with the script */
+    --stage-min: clamp(360px, calc(100dvh - 270px), var(--viewer-max));
+    --tex-size: 240px;
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
+  html { color-scheme: dark; }
   body {
     margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: "Segoe UI", sans-serif;
-    font-size: 14px;
+    background:
+      radial-gradient(900px 500px at 50% -20%, rgba(70, 201, 122, .05), transparent 60%),
+      var(--bg);
+    color: var(--text-1);
+    font-family: var(--font);
+    font-size: 13.5px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
   }
-  header {
-    padding: 14px 20px;
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  svg { flex: none; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      transition-duration: .01ms !important;
+    }
+  }
+
+  /* ---------------- Header ---------------- */
+  .app-header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--header-h);
+    padding: 0 14px;
     border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: baseline;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .brand h1 {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 650;
+    letter-spacing: -.01em;
+    white-space: nowrap;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 7px; }
+
+  /* ---------------- Workspace: one shared row ---------------- */
+  .workspace {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr) 280px;
     gap: 12px;
-  }
-  header h1 { font-size: 18px; margin: 0; }
-  header p { margin: 0; color: var(--sub); font-size: 12px; }
-  .header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-  header .pill, .changelog .pill {
-    color: var(--sub);
-    text-decoration: none;
-    font-size: 12px;
-    font-family: inherit;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 4px 12px;
-    cursor: pointer;
-    transition: color .15s, border-color .15s;
-  }
-  header .pill:hover, .changelog .pill:hover { color: var(--text); border-color: var(--accent); }
-  .changelog {
-    position: fixed;
-    top: 56px;
-    right: 20px;
-    z-index: 20;
-    width: min(400px, calc(100vw - 40px));
-    max-height: calc(100vh - 90px);
-    overflow: auto;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
-  }
-  .changelog-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .changelog h2 { font-size: 14px; margin: 0; }
-  .changelog h3 { font-size: 12px; margin: 14px 0 6px; color: var(--accent); font-weight: 600; }
-  .changelog ul { margin: 0; padding-left: 18px; color: var(--sub); font-size: 12px; line-height: 1.65; }
-  main {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    padding: 16px 20px;
-    align-items: flex-start;
+    width: 100%;
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 12px 14px 16px;
   }
   .panel {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
+    border-radius: var(--radius-lg);
+    min-width: 0;
+    min-height: 0;
+    box-shadow: var(--shadow-1);
   }
-  .controls { width: 340px; display: flex; flex-direction: column; gap: 14px; }
-  .dropzone {
-    border: 2px dashed var(--border);
-    border-radius: 8px;
-    padding: 10px;
-    text-align: center;
-    color: var(--sub);
+
+  /* ---------------- Sidebar ---------------- */
+  .sidebar {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-3) transparent;
+  }
+  .sidebar::-webkit-scrollbar { width: 8px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+  .sidebar > * + * { border-top: 1px solid var(--border); }
+  .group { padding: 10px 13px; display: flex; flex-direction: column; gap: 8px; }
+  .group-title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+
+  /* Segmented control */
+  .segmented {
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+  }
+  .seg { flex: 1; min-width: 0; display: block; position: relative; }
+  .seg input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
     cursor: pointer;
-    min-height: 120px;
+  }
+  .seg span {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: border-color .15s;
-  }
-  .dropzone.drag { border-color: var(--accent); }
-  .dropzone img { max-width: 100%; max-height: 160px; object-fit: contain; }
-  .dropzone span { pointer-events: none; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .row label { color: var(--sub); }
-  select, input[type="color"] {
-    background: var(--bg);
-    color: var(--text);
-    border: 1px solid var(--border);
+    height: 26px;
+    padding: 0 3px;
     border-radius: 6px;
-    padding: 4px 8px;
+    font-size: 12.5px;
+    font-weight: 550;
+    color: var(--text-3);
+    transition: color var(--dur) var(--ease), background-color var(--dur) var(--ease);
   }
-  input[type="checkbox"] { accent-color: var(--accent); }
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field > span { color: var(--sub); font-size: 12px; }
-  .field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .field-head > span { color: var(--sub); font-size: 12px; }
-  select.mini { padding: 2px 6px; font-size: 12px; }
-  button {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 16px;
-    font-size: 14px;
-    cursor: pointer;
+  .seg input:not(:checked):hover + span { color: var(--text-2); }
+  .seg input:checked + span {
+    background: var(--surface-3);
+    color: var(--text-1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .35);
   }
-  button:disabled { background: var(--border); color: var(--sub); cursor: default; }
-  .previews { display: flex; gap: 16px; flex-wrap: wrap; }
-  .preview-box { display: flex; flex-direction: column; gap: 8px; }
-  .preview-box h2 { font-size: 13px; margin: 0; color: var(--sub); font-weight: 600; }
-  canvas.viewer {
-    display: block;
-    width: 100%;
-    max-width: 340px;
-    aspect-ratio: 17 / 22;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: radial-gradient(circle at 50% 38%, #272a33, #14151a 72%);
-    touch-action: none;
-    cursor: grab;
-  }
-  canvas.viewer.dragging { cursor: grabbing; }
-  .view-tools {
-    display: flex;
+  .seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
     align-items: center;
     gap: 10px;
-    font-size: 12px;
-    color: var(--sub);
   }
-  .view-tools label { display: flex; align-items: center; gap: 4px; }
-  button.ghost {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--sub);
-    padding: 4px 10px;
-    font-size: 12px;
+  .field-label { font-size: 12.5px; color: var(--text-2); }
+  .row-hint { margin-top: -2px; }
+
+  /* Switch */
+  .switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+    font-size: 12.5px;
+    color: var(--text-1);
+    cursor: pointer;
+    user-select: none;
+  }
+  .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .switch .track {
+    flex: none;
+    width: 28px;
+    height: 17px;
     border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    position: relative;
+    transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
   }
-  button.ghost:hover { color: var(--text); border-color: var(--accent); }
-  canvas.pixelated {
-    image-rendering: pixelated;
+  .switch .track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 11px;
+    height: 11px;
+    border-radius: 999px;
+    background: var(--text-3);
+    transition: transform var(--dur) var(--ease), background-color var(--dur) var(--ease);
+  }
+  .switch input:checked + .track { background: var(--accent); border-color: var(--accent); }
+  .switch input:checked + .track::after { transform: translateX(11px); background: #fff; }
+  .switch input:focus-visible + .track { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .switch:has(input:disabled) { color: var(--text-3); cursor: not-allowed; }
+  .switch:has(input:disabled) .track { opacity: .45; }
+  .switch-sm .track { width: 24px; height: 14px; }
+  .switch-sm .track::after { width: 8px; height: 8px; top: 2px; left: 2px; }
+  .switch-sm input:checked + .track::after { transform: translateX(10px); }
+  .switch-sm { min-height: 20px; font-size: 12px; color: var(--text-2); }
+  .switch-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+  /* Compact upload slots — one 36px row per image */
+  .slot-list { display: flex; flex-direction: column; gap: 5px; }
+  .slot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 3px 5px;
+    border: 1.5px dashed var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface-1);
+    cursor: pointer;
+    transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+  }
+  .slot:hover { border-color: #4a4f5a; background: var(--surface-2); }
+  .slot.drag { border-color: var(--accent); background: var(--accent-soft); }
+  .slot.filled { border-style: solid; border-color: var(--border); background: var(--surface-1); }
+  .slot.filled:hover { border-color: var(--border-strong); }
+  .slot-thumb {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text-3);
+    overflow: hidden;
+  }
+  .slot-thumb svg { width: 13px; height: 13px; }
+  .slot-thumb canvas { max-width: 26px; max-height: 26px; display: block; }
+  .slot-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 12.5px;
+    font-weight: 550;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tag {
+    font-style: normal;
+    font-size: 9px;
+    font-weight: 650;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .tag.optional { color: var(--text-3); }
+  .slot-fit { flex: none; margin-left: auto; }
+  .slot-clear {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+  }
+  .slot-clear:hover { color: var(--text-1); background: var(--surface-3); }
+  .slot-clear svg { width: 10px; height: 10px; }
+
+  /* Selects & colour */
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 28px;
+    padding: 0 22px 0 9px;
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--text-1);
+    background-color: var(--surface-1);
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a6abb5' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 7px center;
     border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color var(--dur) var(--ease);
+  }
+  select:hover { border-color: var(--border-strong); }
+  select.mini {
+    height: 24px;
+    padding: 0 19px 0 7px;
+    font-size: 11.5px;
+    background-position: right 6px center;
     border-radius: 6px;
   }
-  .checker {
-    background:
-      conic-gradient(#26282f 0 25%, #1d1f25 0 50%, #26282f 0 75%, #1d1f25 0) 0 0 / 16px 16px;
+  input[type="color"] {
+    width: 30px;
+    height: 24px;
+    padding: 2px;
+    background-color: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
   }
-  .hint { color: var(--sub); font-size: 12px; line-height: 1.6; }
-  code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 1px; }
+  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 3px; }
+  .bg-row { display: flex; align-items: center; gap: 12px; }
+  .bg-row input[type="color"] { margin-left: auto; }
+
+  /* Advanced accordion */
+  details.adv > summary {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 13px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+  details.adv > summary::-webkit-details-marker { display: none; }
+  details.adv > summary svg { width: 12px; height: 12px; transition: transform var(--dur) var(--ease); }
+  details.adv[open] > summary svg { transform: rotate(90deg); }
+  details.adv[open] > summary { color: var(--text-1); }
+  details.adv > .adv-body {
+    padding: 0 13px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ---------------- Viewer (centre) ---------------- */
+  .viewer-panel { display: flex; flex-direction: column; min-height: 0; }
+  .panel-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title { margin: 0; font-size: 12.5px; font-weight: 650; }
+  .panel-tools { display: flex; align-items: center; gap: 9px; }
+  .viewer-stage {
+    flex: 1 1 auto;
+    min-height: var(--stage-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px; /* keep in sync with STAGE_PAD in the script */
+    position: relative;
+  }
+  .viewer {
+    display: block;
+    cursor: grab;
+    touch-action: none;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: radial-gradient(circle at 50% 40%, #23262c, #15171b 78%);
+  }
+  .viewer.dragging { cursor: grabbing; }
+  .viewer-empty {
+    position: absolute;
+    inset: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-align: center;
+    pointer-events: none;
+  }
+  .viewer-empty svg { width: 32px; height: 32px; color: var(--text-3); opacity: .85; margin-bottom: 4px; }
+  .viewer-empty p { margin: 0; font-size: 12.5px; font-weight: 550; color: var(--text-2); }
+  .viewer-empty small { font-size: 11.5px; color: var(--text-3); }
+  .viewer-foot {
+    flex: none;
+    margin: 0;
+    padding: 5px 12px 8px;
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-3);
+  }
+
+  /* ---------------- Export (right) ---------------- */
+  .export-panel { display: flex; flex-direction: column; min-height: 0; }
+  .export-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 13px;
+  }
+  .export-body .hint { margin-top: auto; }
+  .tex-stage {
+    position: relative;
+    width: var(--tex-size);
+    max-width: 100%;
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    overflow: hidden;
+    background:
+      conic-gradient(#232730 0 25%, #1b1e26 0 50%, #232730 0 75%, #1b1e26 0) 0 0 / 16px 16px;
+  }
+  .tex-stage canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+  .tex-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 11.5px;
+    pointer-events: none;
+  }
+  .tex-empty svg { width: 24px; height: 24px; opacity: .8; }
+  .tex-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-2);
+  }
+  .tex-meta .kind { color: var(--text-3); }
+  .export-body .btn-primary { width: 100%; }
+
+  /* Status indicator */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    color: var(--text-3);
+  }
+  .status .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--wait);
+    transition: background-color var(--dur) var(--ease);
+  }
+  .status.ready { color: var(--text-2); }
+  .status.ready .dot { background: var(--accent); }
+
+  /* ---------------- Buttons & icons ---------------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-1);
+    color: var(--text-1);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 550;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .btn svg { width: 13px; height: 13px; color: var(--text-2); }
+  .btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+  .btn:hover svg { color: var(--text-1); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  .btn-sm { height: 26px; padding: 0 9px; font-size: 12px; }
+  .btn-primary {
+    height: 34px;
+    font-size: 13px;
+    font-weight: 650;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), var(--shadow-1);
+  }
+  .btn-primary svg { color: var(--accent-ink); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
+  .btn-primary:hover:not(:disabled) svg { color: var(--accent-ink); }
+  .btn-primary:disabled {
+    background: var(--surface-1);
+    border-color: var(--border);
+    color: var(--text-3);
+    box-shadow: none;
+  }
+  .icon-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-1);
+    color: var(--text-2);
+    cursor: pointer;
+    transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .icon-btn svg { width: 13px; height: 13px; }
+  .icon-btn:hover { color: var(--text-1); background: var(--surface-2); border-color: var(--border-strong); }
+
+  /* ---------------- Changelog & toast ---------------- */
+  .changelog {
+    position: fixed;
+    top: 50px;
+    right: 14px;
+    z-index: 30;
+    width: min(400px, calc(100vw - 28px));
+    max-height: calc(100dvh - 66px);
+    overflow: auto;
+    background: var(--panel);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    box-shadow: var(--shadow-2);
+    animation: pop .16s var(--ease);
+    transform-origin: top right;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-3) transparent;
+  }
+  @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+  .changelog-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .changelog h2 { margin: 0; font-size: 13.5px; font-weight: 650; }
+  .changelog h3 { margin: 12px 0 5px; font-size: 12px; font-weight: 600; color: var(--accent); }
+  .changelog ul { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 12px; line-height: 1.6; }
+  code {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    z-index: 40;
+    background: var(--surface-3);
+    border: 1px solid var(--border-strong);
+    color: var(--text-1);
+    font-size: 12px;
+    padding: 7px 13px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-2);
+    animation: rise .18s var(--ease);
+    max-width: calc(100vw - 28px);
+  }
+  @keyframes rise { from { opacity: 0; transform: translate(-50%, 6px); } }
+
+  .hint { margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--text-3); }
+
+  /* ---------------- Responsive: width ---------------- */
+  @media (min-width: 768px) {
+    body { height: 100dvh; overflow: hidden; }
+    .app-header { background: rgba(18, 19, 22, .92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  }
+  /* Mid width: settings left, preview + export stacked right.
+     The stage shrinks with the viewport so the stacked export fits below it. */
+  @media (max-width: 1023px) and (min-width: 768px) {
+    :root {
+      --tex-size: 176px;
+      --stage-min: clamp(240px, calc(100dvh - 380px), 360px);
+    }
+    .workspace {
+      height: calc(100dvh - var(--header-h));
+      grid-template-columns: 290px minmax(0, 1fr);
+      /* explicit rows: the spanning sidebar cannot push them apart */
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+    .sidebar { grid-column: 1; grid-row: 1 / 3; max-height: calc(100dvh - var(--header-h) - 26px); }
+    .viewer-panel { grid-column: 2; grid-row: 1; }
+    .export-panel { grid-column: 2; grid-row: 2; }
+    .export-panel .export-body {
+      display: grid;
+      grid-template-columns: var(--tex-size) minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      gap: 8px 14px;
+      grid-template-areas:
+        "tex meta"
+        "tex dl";
+      align-items: start;
+      align-content: start;
+    }
+    .export-panel .tex-stage { grid-area: tex; }
+    .export-panel .tex-meta { grid-area: meta; align-self: end; padding-top: 8px; }
+    .export-panel #download { grid-area: dl; }
+    .export-panel .hint { display: none; }
+    .viewer-panel .viewer-foot { display: none; }
+  }
+  /* Mobile: natural scroll, preview first */
+  @media (max-width: 767px) {
+    body { min-height: 100dvh; }
+    .workspace { display: flex; flex-direction: column; gap: 10px; padding: 10px 10px 18px; }
+    .viewer-panel { order: 0; }
+    .export-panel { order: 1; }
+    .sidebar { order: 2; overflow: visible; max-height: none; }
+    .viewer-stage { min-height: 0; height: min(58vh, 440px); }
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 15;
+      background: rgba(18, 19, 22, .92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+  }
+
+  /* ---------------- Responsive: height ---------------- */
+  @media (max-height: 640px) {
+    :root { --viewer-max: 400px; --tex-size: 176px; }
+    .viewer-foot, .export-body .hint { display: none; }
+    .workspace { padding: 10px 14px 12px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>Minecraft Skin Generator</h1>
-  <p>Generate 64x64 / 128x128 skins from images</p>
+<header class="app-header">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" width="18" height="18" aria-hidden="true">
+      <path d="M16 3 29 9.8 16 16.6 3 9.8Z" fill="#4ec97d"/>
+      <path d="M3 9.8v12.4l13 6.8V16.6L3 9.8Z" fill="#2d7f4f"/>
+      <path d="M29 9.8v12.4l-13 6.8V16.6l13-6.8Z" fill="#3aa765"/>
+    </svg>
+    <h1>Minecraft Skin Generator</h1>
+  </div>
   <div class="header-actions">
-    <button id="changelogBtn" class="pill" type="button" aria-expanded="false" aria-controls="changelogPanel">Changelog</button>
-    <a class="pill" href="https://github.com/oscar269/SKINGEN" target="_blank" rel="noopener">GitHub ↗</a>
+    <button id="changelogBtn" class="btn btn-sm" type="button" aria-expanded="false" aria-controls="changelogPanel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.74 9.74 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 3"/></svg>
+      Changelog
+    </button>
+    <a class="btn btn-sm" href="https://github.com/oscar269/SKINGEN" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+      GitHub
+    </a>
   </div>
 </header>
+
+<div class="workspace">
+  <!-- LEFT: mode, images, options -->
+  <aside class="panel sidebar" aria-label="Skin settings">
+    <section class="group" aria-labelledby="modeTitle">
+      <h2 class="group-title" id="modeTitle">Mode</h2>
+      <div class="segmented" role="radiogroup" aria-label="Generation mode">
+        <label class="seg"><input type="radio" name="mode" value="body"><span>Whole body</span></label>
+        <label class="seg"><input type="radio" name="mode" value="face"><span>Face only</span></label>
+        <label class="seg"><input type="radio" name="mode" value="facebody" checked><span>Face + body</span></label>
+      </div>
+      <p class="hint" id="modeHint"></p>
+    </section>
+
+    <section class="group" aria-labelledby="imgTitle">
+      <h2 class="group-title" id="imgTitle">Images</h2>
+      <div class="slot-list">
+        <div class="slot" id="dropFront" role="button" tabindex="0" aria-label="Choose the front image">
+          <span class="slot-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></span>
+          <span class="slot-name">Front image <i class="tag">required</i></span>
+          <select id="fitFront" class="mini slot-fit" aria-label="Fit for the front image" title="How the image fills the skin area">
+            <option value="contain" selected>Fit whole image</option>
+            <option value="cover">Fill &amp; crop</option>
+            <option value="stretch">Stretch</option>
+          </select>
+          <button id="clearFront" class="slot-clear" type="button" hidden aria-label="Remove the front image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <input type="file" id="fileFront" accept="image/*" hidden>
+
+        <div class="slot" id="dropBody" role="button" tabindex="0" aria-label="Choose the body image">
+          <span class="slot-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></span>
+          <span class="slot-name">Body image <i class="tag optional">optional</i></span>
+          <select id="fitBody" class="mini slot-fit" aria-label="Fit for the body image" title="How the image fills the skin area">
+            <option value="contain" selected>Fit whole image</option>
+            <option value="cover">Fill &amp; crop</option>
+            <option value="stretch">Stretch</option>
+          </select>
+          <button id="clearBody" class="slot-clear" type="button" hidden aria-label="Remove the body image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <input type="file" id="fileBody" accept="image/*" hidden>
+
+        <div class="slot" id="dropBack" role="button" tabindex="0" aria-label="Choose the back image">
+          <span class="slot-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></span>
+          <span class="slot-name">Back image <i class="tag optional">optional</i></span>
+          <select id="fitBack" class="mini slot-fit" aria-label="Fit for the back image" title="How the image fills the skin area">
+            <option value="contain" selected>Fit whole image</option>
+            <option value="cover">Fill &amp; crop</option>
+            <option value="stretch">Stretch</option>
+          </select>
+          <button id="clearBack" class="slot-clear" type="button" hidden aria-label="Remove the back image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <input type="file" id="fileBack" accept="image/*" hidden>
+      </div>
+    </section>
+
+    <section class="group" id="faceWrapRow" aria-labelledby="wrapTitle">
+      <h2 class="group-title" id="wrapTitle">Wrapping</h2>
+      <div class="switch-row">
+        <label class="switch"><input type="checkbox" id="faceSides" checked><span class="track"></span><span class="switch-label">Face sides</span></label>
+        <label class="switch"><input type="checkbox" id="faceBack" checked><span class="track"></span><span class="switch-label">Face back</span></label>
+      </div>
+    </section>
+
+    <section class="group" aria-labelledby="outTitle">
+      <h2 class="group-title" id="outTitle">Output</h2>
+      <div class="field-row">
+        <span class="field-label" id="sizeLbl">Size</span>
+        <div class="segmented" role="radiogroup" aria-labelledby="sizeLbl">
+          <label class="seg"><input type="radio" name="size" value="64"><span>64</span></label>
+          <label class="seg"><input type="radio" name="size" value="128" checked><span>128</span></label>
+          <label class="seg"><input type="radio" name="size" value="256"><span>256</span></label>
+        </div>
+      </div>
+      <div class="field-row">
+        <span class="field-label" id="armLbl">Arms</span>
+        <div class="segmented" role="radiogroup" aria-labelledby="armLbl">
+          <label class="seg"><input type="radio" name="arm" value="steve" checked><span>Steve</span></label>
+          <label class="seg"><input type="radio" name="arm" value="alex"><span>Alex</span></label>
+        </div>
+      </div>
+      <p class="hint row-hint">64 Java &middot; 128 Bedrock &middot; 256 mod</p>
+    </section>
+
+    <details class="adv">
+      <summary>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        Advanced
+      </summary>
+      <div class="adv-body">
+        <label class="switch"><input type="checkbox" id="pixel"><span class="track"></span><span class="switch-label">Pixel art look</span></label>
+        <div class="bg-row">
+          <label class="switch"><input type="checkbox" id="bgTransparent" checked><span class="track"></span><span class="switch-label">Transparent margins</span></label>
+          <input type="color" id="bg" value="#ffffff" aria-label="Background colour">
+        </div>
+      </div>
+    </details>
+  </aside>
+
+  <!-- CENTER: 3D preview -->
+  <section class="panel viewer-panel" aria-label="3D preview">
+    <div class="panel-head">
+      <h2 class="panel-title">3D preview</h2>
+      <div class="panel-tools">
+        <label class="switch switch-sm" title="Auto rotate">
+          <input type="checkbox" id="spin" checked><span class="track"></span><span class="switch-label">Spin</span>
+        </label>
+        <button id="resetView" class="icon-btn" type="button" title="Reset view (double-click)" aria-label="Reset view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="viewer-stage" id="viewerStage">
+      <canvas id="charPreview" class="viewer"></canvas>
+      <div class="viewer-empty" id="viewerEmpty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        <p>Add an image to see your skin here</p>
+        <small>The front image on the left is all you need to start</small>
+      </div>
+    </div>
+    <p class="viewer-foot">Drag to rotate &middot; Scroll or pinch to zoom &middot; Double-click to reset</p>
+  </section>
+
+  <!-- RIGHT: texture & export -->
+  <aside class="panel export-panel" aria-label="Texture and export">
+    <div class="panel-head">
+      <h2 class="panel-title">Skin texture</h2>
+      <span class="status" id="genStatus"><i class="dot" aria-hidden="true"></i><span id="genStatusText">Waiting for image</span></span>
+    </div>
+    <div class="export-body">
+      <div class="tex-stage">
+        <canvas id="texPreview"></canvas>
+        <div class="tex-empty" id="texEmpty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.35-4.35a1 1 0 0 0-1.42 0L5 21"/></svg>
+          <span>The texture appears here once you add an image</span>
+        </div>
+      </div>
+      <div class="tex-meta">
+        <span id="texSize">&mdash;</span>
+        <span class="kind" id="texKind"></span>
+      </div>
+      <button id="download" class="btn btn-primary" type="button" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+        Download PNG
+      </button>
+      <p class="hint">Put the PNG in your Minecraft profile to wear it &mdash; everything runs locally in your browser.</p>
+    </div>
+  </aside>
+</div>
+
 <div class="changelog" id="changelogPanel" hidden>
   <div class="changelog-head">
     <h2>Changelog</h2>
-    <button id="changelogClose" class="pill" type="button">Close</button>
+    <button id="changelogClose" class="btn btn-sm" type="button">Close</button>
   </div>
   <h3>2026-11-21</h3>
   <ul>
@@ -196,97 +846,8 @@
     <li>Browser-based skin generator (64 / 128 / 256)</li>
   </ul>
 </div>
-<main>
-  <section class="panel controls">
-    <div class="field">
-      <div class="field-head">
-        <span id="frontLabel">Front image (required)</span>
-        <select id="fitFront" class="mini" title="How the front image is fitted">
-          <option value="contain" selected>contain</option>
-          <option value="cover">cover</option>
-          <option value="stretch">stretch</option>
-        </select>
-      </div>
-      <div class="dropzone" id="dropFront"><span>Click or drag &amp; drop</span></div>
-      <input type="file" id="fileFront" accept="image/*" hidden>
-    </div>
-    <div class="field" id="fieldBody">
-      <div class="field-head">
-        <span>Body image (optional; blurred face is used when empty)</span>
-        <select id="fitBody" class="mini" title="How the body image is fitted">
-          <option value="contain" selected>contain</option>
-          <option value="cover">cover</option>
-          <option value="stretch">stretch</option>
-        </select>
-      </div>
-      <div class="dropzone" id="dropBody"><span>Click or drag &amp; drop</span></div>
-      <input type="file" id="fileBody" accept="image/*" hidden>
-    </div>
-    <div class="field" id="fieldBack">
-      <div class="field-head">
-        <span>Back image (optional; a darkened front is used by default)</span>
-        <select id="fitBack" class="mini" title="How the back image is fitted">
-          <option value="contain" selected>contain</option>
-          <option value="cover">cover</option>
-          <option value="stretch">stretch</option>
-        </select>
-      </div>
-      <div class="dropzone" id="dropBack"><span>Click or drag &amp; drop</span></div>
-      <input type="file" id="fileBack" accept="image/*" hidden>
-    </div>
-    <div class="row">
-      <label>Mode</label>
-      <select id="mode">
-        <option value="body">Whole body photo</option>
-        <option value="face">Face only</option>
-        <option value="facebody" selected>Face + body (separate images)</option>
-      </select>
-    </div>
-    <p class="hint" id="modeHint"></p>
-    <div class="row" id="faceWrapRow">
-      <label><input type="checkbox" id="faceSides" checked> Face on sides</label>
-      <label><input type="checkbox" id="faceBack" checked> Face on back</label>
-    </div>
-    <div class="row">
-      <label>Size</label>
-      <select id="size">
-        <option value="64">64 x 64 (Java)</option>
-        <option value="128" selected>128 x 128 (Bedrock)</option>
-        <option value="256">256 x 256 (needs a mod)</option>
-      </select>
-    </div>
-    <div class="row">
-      <label><input type="checkbox" id="slim"> Slim arms (Alex)</label>
-      <label><input type="checkbox" id="pixel"> Pixel art</label>
-    </div>
-    <div class="row">
-      <label><input type="checkbox" id="bgTransparent" checked> Transparent margins</label>
-      <input type="color" id="bg" value="#ffffff">
-    </div>
-    <button id="download" disabled>Download skin (PNG)</button>
-    <p class="hint">
-      The skin regenerates automatically whenever you change a setting.<br>
-      Drag the 3D preview to spin the model; wheel or pinch zooms, double-click resets.<br>
-      Java takes 64x64, Bedrock 128x128 — vanilla Bedrock refuses 256x256, that size needs a skin mod.<br>
-      Upload the downloaded PNG in your Minecraft profile settings to apply it.
-    </p>
-  </section>
-  <section class="previews">
-    <div class="panel preview-box">
-      <h2>Skin texture</h2>
-      <canvas id="texPreview" class="pixelated checker" width="384" height="384"></canvas>
-    </div>
-    <div class="panel preview-box">
-      <h2>3D preview</h2>
-      <canvas id="charPreview" class="viewer" width="340" height="440"></canvas>
-      <div class="view-tools">
-        <label><input type="checkbox" id="spin" checked> Auto rotate</label>
-        <button id="resetView" class="ghost" type="button">Reset view</button>
-      </div>
-      <p class="hint">Drag to spin, wheel / pinch to zoom, double-click to reset.</p>
-    </div>
-  </section>
-</main>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -482,63 +1043,154 @@ function buildFaceBodySkin(faceSrc, bodySrc, backSrc, size, slim, fitFace, fitBo
   return skin;
 }
 
+/* ---------- UI state ---------- */
 let frontImg = null, bodyImg = null, backImg = null, currentSkin = null, baseName = "skin";
 
+/* Segmented controls (radio groups) */
+const getMode = () => document.querySelector('input[name="mode"]:checked').value;
+const getSize = () => +document.querySelector('input[name="size"]:checked').value;
+const getSlim = () => document.querySelector('input[name="arm"]:checked').value === "alex";
+
+/* Toast */
+let toastTimer = 0;
+function showToast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
+}
+
+/* Status indicator */
+function setStatus(ready) {
+  $("genStatus").classList.toggle("ready", ready);
+  $("genStatusText").textContent = ready ? "Ready" : "Waiting for image";
+}
+
+function resetPreviews() {
+  currentSkin = null;
+  $("download").disabled = true;
+  setStatus(false);
+  const tp = $("texPreview");
+  tp.getContext("2d").clearRect(0, 0, tp.width, tp.height);
+  $("texSize").textContent = "\u2014";
+  $("texKind").textContent = "";
+  $("texEmpty").hidden = false;
+  view.skin = null;
+  view.faces = null;
+  view.dirty = true;
+  $("viewerEmpty").hidden = false;
+}
+
+/* ---------- Upload slots ---------- */
 function loadFile(file, cb) {
   const url = URL.createObjectURL(file);
   const img = new Image();
-  img.onload = () => { cb(img); URL.revokeObjectURL(url); };
+  img.onload = () => { cb(img, file); URL.revokeObjectURL(url); };
+  img.onerror = () => { URL.revokeObjectURL(url); showToast("That file could not be read as an image."); };
   img.src = url;
 }
-function setupDrop(dropId, inputId, cb) {
+function cloneForDisplay(img) {
+  const c = mkCanvas(img.naturalWidth, img.naturalHeight);
+  c.getContext("2d").drawImage(img, 0, 0);
+  c.style.display = "block";
+  c.style.maxWidth = "26px";
+  c.style.maxHeight = "26px";
+  c.style.objectFit = "contain";
+  return c;
+}
+function paintThumb(zoneId, clearId, img, file) {
+  const zone = $(zoneId);
+  const thumb = zone.querySelector(".slot-thumb");
+  const name = zone.querySelector(".slot-name");
+  const old = thumb.querySelector("canvas");
+  if (old) old.remove();
+  if (img) {
+    thumb.classList.add("filled");
+    zone.classList.add("filled");
+    thumb.appendChild(cloneForDisplay(img));
+    name.title = file ? file.name : "Loaded image";
+    $(clearId).hidden = false;
+  } else {
+    thumb.classList.remove("filled");
+    zone.classList.remove("filled");
+    name.title = "";
+    $(clearId).hidden = true;
+  }
+}
+function clearSlot(slot) {
+  if (slot === "front") { frontImg = null; baseName = "skin"; }
+  else if (slot === "body") bodyImg = null;
+  else backImg = null;
+  paintThumb("drop" + slot[0].toUpperCase() + slot.slice(1),
+             "clear" + slot[0].toUpperCase() + slot.slice(1), null);
+  resetPreviews();
+  updateUi();
+}
+function setupDrop(dropId, inputId, onImg) {
   const zone = $(dropId), input = $(inputId);
-  zone.addEventListener("click", () => input.click());
-  input.addEventListener("change", () => { if (input.files[0]) cb(input.files[0]); });
+  const open = () => input.click();
+  zone.addEventListener("click", open);
+  zone.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      open();
+    }
+  });
+  const accept = file => {
+    if (!file) return;
+    if (!file.type || !file.type.startsWith("image/")) {
+      showToast("Unsupported file type \u2014 use a PNG, JPG or WebP image.");
+      return;
+    }
+    loadFile(file, onImg);
+  };
+  input.addEventListener("change", () => {
+    accept(input.files[0]);
+    input.value = ""; // allow re-selecting the same file
+  });
   zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag"); });
   zone.addEventListener("dragleave", () => zone.classList.remove("drag"));
   zone.addEventListener("drop", e => {
     e.preventDefault();
     zone.classList.remove("drag");
-    if (e.dataTransfer.files[0]) cb(e.dataTransfer.files[0]);
+    accept(e.dataTransfer.files[0]);
   });
 }
-setupDrop("dropFront", "fileFront", file => {
+setupDrop("dropFront", "fileFront", (img, file) => {
+  frontImg = img;
   baseName = file.name.replace(/\.[^.]+$/, "") || "skin";
-  loadFile(file, img => {
-    frontImg = img;
-    const zone = $("dropFront");
-    zone.innerHTML = "";
-    zone.appendChild(cloneForDisplay(img));
-    generate();
-  });
+  paintThumb("dropFront", "clearFront", img, file);
+  generate();
 });
-setupDrop("dropBody", "fileBody", file => {
-  loadFile(file, img => {
-    bodyImg = img;
-    const zone = $("dropBody");
-    zone.innerHTML = "";
-    zone.appendChild(cloneForDisplay(img));
-    updateUi();
-    generate();
-  });
+setupDrop("dropBody", "fileBody", (img, file) => {
+  bodyImg = img;
+  paintThumb("dropBody", "clearBody", img, file);
+  updateUi();
+  generate();
 });
-setupDrop("dropBack", "fileBack", file => {
-  loadFile(file, img => {
-    backImg = img;
-    const zone = $("dropBack");
-    zone.innerHTML = "";
-    zone.appendChild(cloneForDisplay(img));
-    generate();
-  });
+setupDrop("dropBack", "fileBack", (img, file) => {
+  backImg = img;
+  paintThumb("dropBack", "clearBack", img, file);
+  generate();
 });
-function cloneForDisplay(img) {
-  const c = mkCanvas(img.naturalWidth, img.naturalHeight);
-  c.getContext("2d").drawImage(img, 0, 0);
-  c.style.maxWidth = "100%";
-  c.style.maxHeight = "160px";
-  c.style.objectFit = "contain";
-  return c;
+// inner controls must not trigger the slot's own click handler
+for (const sel of [$("fitFront"), $("fitBody"), $("fitBack")]) {
+  sel.addEventListener("click", e => e.stopPropagation());
+  sel.addEventListener("keydown", e => e.stopPropagation());
 }
+for (const slot of ["front", "body", "back"]) {
+  const btn = $("clear" + slot[0].toUpperCase() + slot.slice(1));
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    clearSlot(slot);
+  });
+  // keep Enter/Space on the remove button from opening the file picker
+  btn.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") e.stopPropagation();
+  });
+}
+
 function hexToRgb(hex) {
   const v = hex.replace("#", "");
   return {
@@ -550,10 +1202,10 @@ function hexToRgb(hex) {
 }
 function generate() {
   if (!frontImg) return;
-  const size = +$("size").value;
-  const slim = $("slim").checked, pixel = $("pixel").checked;
+  const size = getSize();
+  const slim = getSlim(), pixel = $("pixel").checked;
   const bg = $("bgTransparent").checked ? { r: 0, g: 0, b: 0, a: 0 } : hexToRgb($("bg").value);
-  const mode = $("mode").value;
+  const mode = getMode();
   const wrap = { sides: $("faceSides").checked, back: $("faceBack").checked };
   const fitFront = $("fitFront").value, fitBody = $("fitBody").value, fitBack = $("fitBack").value;
   if (mode === "face") {
@@ -564,26 +1216,27 @@ function generate() {
     currentSkin = buildSkinCore(frontImg, backImg, size, slim, fitFront, fitBack, bg, pixel);
   }
   $("download").disabled = false;
+  setStatus(true);
   drawTexture(currentSkin, size);
   setPreviewSkin(currentSkin, slim);
+  $("viewerEmpty").hidden = true;
 }
 function updateUi() {
-  const mode = $("mode").value, faceOnly = mode === "face", faceBody = mode === "facebody";
-  $("frontLabel").textContent = faceOnly || faceBody ? "Face image (required)" : "Front image (required)";
-  $("fieldBody").hidden = !faceBody;
-  $("fieldBack").hidden = faceOnly;
+  const mode = getMode(), faceOnly = mode === "face", faceBody = mode === "facebody";
+  $("dropBody").hidden = !faceBody;
+  $("dropBack").hidden = faceOnly;
   $("faceWrapRow").hidden = !(faceOnly || faceBody);
   // The background colour only matters where a body is being laid out
   const usesBody = mode === "body" || (faceBody && bodyImg);
   $("bgTransparent").disabled = !usesBody;
   $("bg").disabled = !usesBody;
   $("modeHint").textContent = faceOnly
-    ? "Face only: the face is printed on the head, the body uses a blurred copy of it."
+    ? "The body is a blurred copy of the face."
     : faceBody
       ? (bodyImg
-        ? "Face + body: face image on the head, body image on torso, arms and legs."
-        : "Face + body: drop a body image to use it; until then the body uses a blurred copy of the face.")
-      : "Whole body photo: the front image is wrapped around the entire skin.";
+        ? "Face on the head, body image on the torso and limbs."
+        : "The body is a blurred copy until you add an image.")
+      : "The front image wraps the entire skin.";
 }
 function drawTexture(skin, size) {
   const tp = $("texPreview");
@@ -594,6 +1247,9 @@ function drawTexture(skin, size) {
   x.imageSmoothingEnabled = false;
   x.clearRect(0, 0, tp.width, tp.height);
   x.drawImage(skin, 0, 0, tp.width, tp.height);
+  $("texSize").textContent = `${size} \u00d7 ${size}`;
+  $("texKind").textContent = size === 64 ? "Java" : size === 128 ? "Bedrock" : "Needs a mod";
+  $("texEmpty").hidden = true;
 }
 /* ---------- 3D preview ---------- */
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -691,7 +1347,24 @@ function setPreviewSkin(skin, slim) {
   view.dirty = true;
 }
 
+// Fit the canvas into the stage while keeping the 17:22 aspect ratio.
+// VIEWER_MAX_H caps the canvas height even if the stage is taller.
+// The stage padding (10px) must stay in sync with .viewer-stage in the CSS.
+const VIEWER_MAX_H = 440;
+const STAGE_PAD = 10;
+function fitViewerCanvas() {
+  const cv = $("charPreview"), stage = $("viewerStage");
+  const sw = stage.clientWidth - STAGE_PAD * 2;
+  const sh = Math.min(stage.clientHeight - STAGE_PAD * 2, VIEWER_MAX_H);
+  if (sw <= 0 || sh <= 0) return;
+  const ar = 17 / 22;
+  const w = Math.max(1, Math.min(sw, sh * ar));
+  cv.style.width = `${Math.floor(w)}px`;
+  cv.style.height = `${Math.floor(w / ar)}px`;
+}
+
 function renderPreview() {
+  fitViewerCanvas();
   const cv = $("charPreview");
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const w = Math.max(1, Math.round(cv.clientWidth * dpr));
@@ -700,15 +1373,9 @@ function renderPreview() {
   const x = cv.getContext("2d");
   x.setTransform(1, 0, 0, 1, 0, 0);
   x.clearRect(0, 0, w, h);
-  if (!view.faces) {
-    x.fillStyle = "#9aa0ac";
-    x.font = `${12 * dpr}px "Segoe UI", sans-serif`;
-    x.textAlign = "center";
-    x.textBaseline = "middle";
-    x.fillText("Load an image to preview the skin", w / 2, h / 2);
-    return;
-  }
-  const unit = Math.min(h * 0.78 / 33, w * 0.9 / 18) * view.zoom;
+  if (!view.faces) return; // the HTML empty state is shown instead
+  // Character visibility first, not panel area
+  const unit = Math.min(h * 0.82 / 33, w * 0.9 / 18) * view.zoom;
   const midX = w / 2, midY = h / 2;
   const cosY = Math.cos(view.yaw), sinY = Math.sin(view.yaw);
   const cosP = Math.cos(view.pitch), sinP = Math.sin(view.pitch);
@@ -773,7 +1440,7 @@ function resetView() {
 }
 
 (function initViewer() {
-  const cv = $("charPreview");
+  const cv = $("charPreview"), stage = $("viewerStage");
   let lastX = 0, lastY = 0;
   cv.addEventListener("pointerdown", e => {
     cv.setPointerCapture(e.pointerId);
@@ -805,6 +1472,10 @@ function resetView() {
   $("resetView").addEventListener("click", resetView);
   $("spin").addEventListener("change", () => { view.dirty = true; });
   window.addEventListener("resize", () => { view.dirty = true; });
+  // react to stage size changes (grid switch, panel resize) as well
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => { view.dirty = true; }).observe(stage);
+  }
 
   let last = 0;
   const tick = t => {
@@ -819,8 +1490,15 @@ function resetView() {
   };
   requestAnimationFrame(tick);
 })();
-for (const id of ["size", "fitFront", "fitBody", "fitBack", "slim", "mode", "pixel", "bgTransparent", "bg", "faceSides", "faceBack"]) {
+
+for (const id of ["fitFront", "fitBody", "fitBack", "pixel", "bgTransparent", "bg", "faceSides", "faceBack"]) {
   $(id).addEventListener("change", () => {
+    updateUi();
+    generate();
+  });
+}
+for (const el of document.querySelectorAll('input[name="mode"], input[name="size"], input[name="arm"]')) {
+  el.addEventListener("change", () => {
     updateUi();
     generate();
   });
