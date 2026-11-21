@@ -31,6 +31,17 @@
   }
   header h1 { font-size: 18px; margin: 0; }
   header p { margin: 0; color: var(--sub); font-size: 12px; }
+  header a.repo {
+    margin-left: auto;
+    color: var(--sub);
+    text-decoration: none;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    transition: color .15s, border-color .15s;
+  }
+  header a.repo:hover { color: var(--text); border-color: var(--accent); }
   main {
     display: flex;
     flex-wrap: wrap;
@@ -103,6 +114,7 @@
 <header>
   <h1>Minecraft Skin Generator</h1>
   <p>Generate 64x64 / 128x128 skins from images</p>
+  <a class="repo" href="https://github.com/oscar269/SKINGEN" target="_blank" rel="noopener">GitHub ↗</a>
 </header>
 <main>
   <section class="panel controls">
@@ -192,6 +204,14 @@ function crop(src, x0, y0, x1, y1) {
   c.getContext("2d").drawImage(src, x0, y0, w, h, 0, 0, w, h);
   return c;
 }
+function flipX(src) {
+  const c = mkCanvas(src.width, src.height);
+  const x = c.getContext("2d");
+  x.translate(src.width, 0);
+  x.scale(-1, 1);
+  x.drawImage(src, 0, 0);
+  return c;
+}
 function shade(src, factor) {
   const c = mkCanvas(src.width, src.height);
   const x = c.getContext("2d");
@@ -246,25 +266,27 @@ function pasteBox(skin, origin, w, h, d, front, back, s, edge = null) {
   const f = edge ?? front;
   const faces = [
     [shade(resize(crop(f, 0, 0, W, 1), W, D), 1.1),   u + d,     v],     // top
-    [shade(resize(crop(f, 0, H - 1, W, 1), W, D), 0.6), u + d + w, v],   // bottom
+    [shade(resize(crop(f, 0, H - 1, W, H), W, D), 0.6), u + d + w, v],   // bottom
     [shade(resize(crop(f, 0, 0, 1, H), D, H), 0.85),  u,         v + d], // right
     [front,                                          u + d,     v + d], // front
-    [shade(resize(crop(f, W - 1, 0, 1, H), D, H), 0.85), u + d + w, v + d], // left
+    [shade(resize(crop(f, W - 1, 0, W, H), D, H), 0.85), u + d + w, v + d], // left
     [back,                                           u + 2 * d + w, v + d], // back
   ];
   const x = skin.getContext("2d");
   for (const [img, fx, fy] of faces) x.drawImage(img, fx * s, fy * s);
 }
-function makeParts(canvas, s, arm) {
+function makeParts(canvas, s, arm, backView = false) {
   const a = 4 - arm; // shrink the arm region by 1px for the slim model
   const C = (x0, y0, x1, y1) => crop(canvas, x0 * s, y0 * s, x1 * s, y1 * s);
+  // A photo taken from behind keeps the character's right side on the right
+  // (a front photo has it on the left), so the arm and leg panels swap over.
   return {
     head:  C(4, 0, 12, 8),
     body:  C(4, 8, 12, 20),
-    r_arm: C(0 + a, 8, 4, 20),
-    l_arm: C(12, 8, 16 - a, 20),
-    r_leg: C(4, 20, 8, 32),
-    l_leg: C(8, 20, 12, 32),
+    r_arm: backView ? C(12, 8, 16 - a, 20) : C(0 + a, 8, 4, 20),
+    l_arm: backView ? C(0 + a, 8, 4, 20) : C(12, 8, 16 - a, 20),
+    r_leg: backView ? C(8, 20, 12, 32) : C(4, 20, 8, 32),
+    l_leg: backView ? C(4, 20, 8, 32) : C(8, 20, 12, 32),
   };
 }
 const LAYOUT = [
@@ -279,8 +301,8 @@ function buildSkinCore(frontSrc, backSrc, size, slim, fit, bg, pixel) {
   const s = size / 64, arm = slim ? 3 : 4;
   const f = makeParts(fitToCanvas(frontSrc, CHAR_W * s, CHAR_H * s, fit, bg, pixel), s, arm);
   const b = backSrc
-    ? makeParts(fitToCanvas(backSrc, CHAR_W * s, CHAR_H * s, fit, bg, pixel), s, arm)
-    : Object.fromEntries(Object.entries(f).map(([k, v]) => [k, shade(v, 0.85)]));
+    ? makeParts(fitToCanvas(backSrc, CHAR_W * s, CHAR_H * s, fit, bg, pixel), s, arm, true)
+    : Object.fromEntries(Object.entries(f).map(([k, v]) => [k, shade(flipX(v), 0.85)]));
   const skin = mkCanvas(size, size);
   for (const [name, origin, w, h, d] of LAYOUT) {
     const pw = w ?? arm;
@@ -288,28 +310,36 @@ function buildSkinCore(frontSrc, backSrc, size, slim, fit, bg, pixel) {
   }
   return skin;
 }
+const TRANSPARENT = { r: 0, g: 0, b: 0, a: 0 };
+function pasteHead(skin, faceSrc, backSrc, size, slim, fit, bg, pixel) {
+  // The face goes on the front of the head. The other faces reuse the same square
+  // (or the back image's head when one is given) so the head stays as sharp as the
+  // face instead of dissolving into a blurred fur colour.
+  const s = size / 64;
+  const face = fitToCanvas(faceSrc, 8 * s, 8 * s, "cover", TRANSPARENT, pixel);
+  const back = backSrc
+    ? makeParts(fitToCanvas(backSrc, CHAR_W * s, CHAR_H * s, fit, bg, pixel), s, slim, true).head
+    : shade(flipX(face), 0.85);
+  pasteBox(skin, [0, 0], 8, 8, 8, face, back, s, face);
+}
 function buildFaceSkin(src, size, slim, pixel) {
   // Face photo mode: put the face on the front of the head and paint the body with blurred fur color
-  const s = size / 64;
   const blurred = blurCanvas(src, Math.max(1, Math.max(src.width, src.height) / 12 | 0));
-  const skin = buildSkinCore(blurred, null, size, slim, "stretch", { r: 0, g: 0, b: 0, a: 0 }, false);
-  const face = fitToCanvas(src, 8 * s, 8 * s, "cover", { r: 0, g: 0, b: 0, a: 0 }, pixel);
-  const headBlur = fitToCanvas(blurred, 8 * s, 8 * s, "cover", { r: 0, g: 0, b: 0, a: 0 }, false);
-  pasteBox(skin, [0, 0], 8, 8, 8, face, shade(headBlur, 0.85), s, headBlur);
+  const skin = buildSkinCore(blurred, null, size, slim, "stretch", TRANSPARENT, false);
+  pasteHead(skin, src, null, size, slim, "cover", TRANSPARENT, pixel);
   return skin;
 }
 
 function buildFaceBodySkin(faceSrc, bodySrc, backSrc, size, slim, fit, bg, pixel) {
   // Face + body mode: the face image goes on the head, the body image on everything else.
   // Without a body image the body falls back to the blurred face (same as face-only mode).
-  const s = size / 64, T = { r: 0, g: 0, b: 0, a: 0 };
   const faceBlur = blurCanvas(faceSrc, Math.max(1, Math.max(faceSrc.width, faceSrc.height) / 12 | 0));
+  // The back image only describes the body when there is a body image to lay out.
+  const headBack = bodySrc ? backSrc : null;
   const skin = bodySrc
     ? buildSkinCore(bodySrc, backSrc, size, slim, fit, bg, pixel)
-    : buildSkinCore(faceBlur, null, size, slim, "stretch", T, false);
-  const face = fitToCanvas(faceSrc, 8 * s, 8 * s, "cover", T, pixel);
-  const headBlur = fitToCanvas(faceBlur, 8 * s, 8 * s, "cover", T, false);
-  pasteBox(skin, [0, 0], 8, 8, 8, face, shade(headBlur, 0.85), s, headBlur);
+    : buildSkinCore(faceBlur, null, size, slim, "stretch", TRANSPARENT, false);
+  pasteHead(skin, faceSrc, headBack, size, slim, fit, bg, pixel);
   return skin;
 }
 
@@ -420,6 +450,7 @@ function drawTexture(skin, size) {
   tp.width = size * zoom;
   tp.height = size * zoom;
   const x = tp.getContext("2d");
+  x.imageSmoothingEnabled = false;
   x.clearRect(0, 0, tp.width, tp.height);
   x.drawImage(skin, 0, 0, tp.width, tp.height);
 }
@@ -429,6 +460,7 @@ function drawCharPreview(skin, size, arm) {
   cp.width = CHAR_W * zoom;
   cp.height = CHAR_H * zoom;
   const x = cp.getContext("2d");
+  x.imageSmoothingEnabled = false;
   x.clearRect(0, 0, cp.width, cp.height);
   // Arrange the front face (u+d, v+d) of each part into a full-body layout
   const parts = [

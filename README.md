@@ -5,6 +5,9 @@
 画像から Minecraft のスキン（64×64 / 128×128 / 256×256）を生成するブラウザツールです。
 `index.html` を開くだけで動き、インストールもサーバもネット接続も不要です。
 
+**▶ [ブラウザですぐ使う（GitHub Pages）](https://oscar269.github.io/SKINGEN/)**
+｜ ソース: [github.com/oscar269/SKINGEN](https://github.com/oscar269/SKINGEN)
+
 **日本語** | [English](#english)
 
 ---
@@ -33,7 +36,7 @@ SKINGEN/
 
 ## 使い方
 
-1. `index.html` をダブルクリックしてブラウザで開く（Chrome / Edge / Firefox 推奨）
+1. [ブラウザ版（GitHub Pages）](https://oscar269.github.io/SKINGEN/) を開く。ローカルで動かすなら `index.html` をダブルクリック（Chrome / Edge / Firefox 推奨）
 2. **Front image** の枠をクリックして画像を選ぶ、またはドラッグ & ドロップ
 3. 必要なら Mode / Size / Fit などを変更する（変更すると自動で再生成されます）
 4. **Download skin (PNG)** を押して `<元のファイル名>_skin.png` を保存
@@ -93,13 +96,13 @@ SKINGEN/
 2. そのキャンバスから部位を切り出す
    - 頭 `(4,0)-(12,8)` / 胴 `(4,8)-(12,20)` / 右腕 `(0,8)-(4,20)` / 左腕 `(12,8)-(16,20)` / 右脚 `(4,20)-(8,32)` / 左脚 `(8,20)-(12,32)`
 3. 各部位を直方体の展開図としてスキンに書き込む。前面はそのまま、それ以外の面は次のように作る
-   - 背面 … 指定画像、なければ前面を 0.85 倍に暗く
+   - 背面 … 背面画像があればそれを使う（後ろから撮った写真では左右が逆になるので、腕・脚は反対側から切り出す）。なければ前面を左右反転して 0.85 倍に暗く
    - 側面 … 前面の左右端 1px を横に引き伸ばして 0.85 倍
    - 上面 … 前面の上端 1px を引き伸ばして 1.1 倍
    - 底面 … 前面の下端 1px を引き伸ばして 0.6 倍
 4. 重ね着レイヤー（第 2 レイヤー）は透明のまま
 
-`Face only` / `Face + body`（体画像なし）では、頭の前面だけ元画像（`cover` で正方形に切り出し）、頭の側面と体は画像全体を強くぼかしたもの（半径 = 長辺 / 12）から作ります。毛色のグラデーションが全身に回るので、ペットやオリキャラ風のスキンになります。
+`Face only` / `Face + body`（体画像なし）では、頭の前面だけ元画像（`cover` で正方形に切り出し）、頭の側面・上面・背面も同じ顔画像から作ります（背面は左右反転）。体は画像全体を強くぼかしたもの（半径 = 長辺 / 12）から作るので、毛色のグラデーションが全身に回り、ペットやオリキャラ風のスキンになります。
 
 ---
 
@@ -119,6 +122,7 @@ SKINGEN/
 | スキンが真っ透明 / 真っ黒になる | 入力が透過 PNG でないか確認。`Transparent margins` をオフにして色を指定してみる |
 | 表示がぼやける | `Pixel art` をオンにする、または元画像を大きめにする |
 | 腕がずれる | `Slim arms (Alex)` とアップロード時のモデル選択を一致させる |
+| 背中で腕・脚の左右が逆になる | `Back image` に正面の写真を入れると鏡像になります。必ず「後ろから撮った写真」を指定してください |
 | 色が変 / 縞になる | `Fit` を `stretch` から `contain` か `cover` に変える |
 | 保存した PNG のサイズが想定と違う | `Size` の選択を確認（Java は 64×64） |
 | スマホで開くとドラッグできない | 枠をタップしてファイル選択から指定する |
@@ -128,6 +132,9 @@ SKINGEN/
 # English
 
 A browser tool that turns a photo into a Minecraft skin (64×64 / 128×128 / 256×256). Open `index.html` and it just works — no install, no server, no network.
+
+**▶ [Use it in your browser (GitHub Pages)](https://oscar269.github.io/SKINGEN/)**
+— Source: [github.com/oscar269/SKINGEN](https://github.com/oscar269/SKINGEN)
 
 ## Features
 
@@ -151,7 +158,7 @@ SKINGEN/
 
 ## Usage
 
-1. Double-click `index.html` to open it in a browser (Chrome / Edge / Firefox recommended)
+1. Open the [hosted version (GitHub Pages)](https://oscar269.github.io/SKINGEN/), or double-click `index.html` locally (Chrome / Edge / Firefox recommended)
 2. Click the **Front image** box to pick an image, or drag & drop one onto it
 3. Adjust Mode / Size / Fit etc. — the previews regenerate automatically
 4. Click **Download skin (PNG)** to save `<original-name>_skin.png`
@@ -207,13 +214,13 @@ Arm width is part of the skin format (Steve = 4 px, Alex = 3 px). Match the mode
 2. Parts are cropped from that canvas
    - head `(4,0)-(12,8)`, torso `(4,8)-(12,20)`, right arm `(0,8)-(4,20)`, left arm `(12,8)-(16,20)`, right leg `(4,20)-(8,32)`, left leg `(8,20)-(12,32)`
 3. Each part is written as the unwrapped faces of a box. The front is copied verbatim; the other faces are built as follows
-   - back … your back image, or the front darkened to 0.85
+   - back … your back image (arms and legs are read from the opposite side of it), or the front mirrored horizontally and darkened to 0.85
    - sides … one border column of the front, stretched, at 0.85
    - top … one border row of the front, stretched, at 1.1
    - bottom … one border row of the front, stretched, at 0.6
 4. The overlay (second) layer stays transparent
 
-In `Face only` / `Face + body` without a body image, only the head front uses the original image (centre-cropped with `cover`); the head sides and the body come from a strongly blurred copy (radius = longest side / 12), which spreads the dominant fur/hair colour over the whole skin.
+In `Face only` / `Face + body` without a body image, the head front uses the original image (centre-cropped with `cover`) and the head's other faces are built from the same face image (the back is mirrored), so the head stays as sharp as the face. The body comes from a strongly blurred copy (radius = longest side / 12), which spreads the dominant fur/hair colour over the whole skin.
 
 ## Tips and limitations
 
@@ -231,6 +238,7 @@ In `Face only` / `Face + body` without a body image, only the head front uses th
 | Skin comes out fully transparent or black | Check whether the input is a transparent PNG; turn off `Transparent margins` and pick a colour |
 | Everything looks blurry | Turn on `Pixel art`, or use a larger source image |
 | Arms are shifted | Make `Slim arms (Alex)` match the model you select when uploading |
+| Arms and legs are swapped on the back | A front photo in `Back image` comes out mirrored; use a photo taken from behind |
 | Weird colours or banding | Change `Fit` from `stretch` to `contain` or `cover` |
 | Saved PNG has an unexpected size | Check the `Size` selection (Java needs 64×64) |
 | Drag & drop does not work on mobile | Tap the box and use the file picker |
